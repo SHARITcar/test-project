@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to SHARIT - Get Started</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#22d3ee'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100">
+    <!-- Hero Section -->
+    <div class="px-6 pt-10 pb-6 md:px-10 md:pt-16 md:pb-10">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">
+                Welcome to SHARIT
+            </h1>
+            <p class="text-xl text-slate-300 max-w-2xl mx-auto">
+                Let's get you set up to start sharing expenses and managing groups effortlessly.
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="px-6 pb-10 md:px-10">
+        <div class="max-w-6xl mx-auto">
+            <!-- Avatar Upload Section -->
+            <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-lg p-6 md:p-8 mb-8">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold mb-2">Add Your Photo</h2>
+                    <p class="text-slate-400">Help your friends recognize you in groups (optional)</p>
+                </div>
+                
+                <form method="POST" action="/api/complete-onboarding" enctype="multipart/form-data" class="max-w-md mx-auto">
+                    <input type="hidden" name="csrf_token" value="CSRF_TOKEN_PLACEHOLDER">
+                    
+                    <!-- Avatar Preview -->
+                    <div class="flex justify-center mb-6">
+                        <div class="relative">
+                            <div id="avatar-preview" class="w-24 h-24 md:w-32 md:h-32 bg-slate-700 rounded-full flex items-center justify-center text-2xl md:text-3xl font-bold text-slate-300 border-4 border-slate-600">
+                                JS
+                            </div>
+                            <label for="avatar-upload" class="absolute -bottom-2 -right-2 bg-accent hover:bg-cyan-400 text-slate-900 w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 hover:-translate-y-0.5 shadow-lg">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <input 
+                        type="file" 
+                        id="avatar-upload" 
+                        name="avatar" 
+                        accept="image/jpeg,image/png,image/webp" 
+                        class="hidden"
+                        aria-label="Upload profile photo"
+                    >
+                    
+                    <p class="text-sm text-slate-400 text-center mb-6">
+                        JPG, PNG, or WebP • Max 5MB
+                    </p>
+                </form>
+            </div>
+
+            <!-- Platform Overview -->
+            <div class="grid md:grid-cols-3 gap-6 mb-10">
+                <!-- Expense Tracking -->
+                <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 hover:-translate-y-0.5 transition-all duration-200">
+                    <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 0h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Track Expenses</h3>
+                    <p class="text-slate-400 text-sm">
+                        Add receipts, split bills, and keep track of who owes what in real-time.
+                    </p>
+                </div>
+
+                <!-- Group Management -->
+                <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 hover:-translate-y-0.5 transition-all duration-200">
+                    <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Manage Groups</h3>
+                    <p class="text-slate-400 text-sm">
+                        Create groups for trips, roommates, or any shared expenses with friends.
+                    </p>
+                </div>
+
+                <!-- Settlement -->
+                <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 hover:-translate-y-0.5 transition-all duration-200">
+                    <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Settle Up</h3>
+                    <p class="text-slate-400 text-sm">
+                        Get smart recommendations on who should pay whom to settle all debts efficiently.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-lg p-6 md:p-8">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold mb-2">Ready to Start?</h2>
+                    <p class="text-slate-400">You can always update your profile later in settings.</p>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
+                    <button 
+                        type="button"
+                        onclick="document.querySelector('form').submit()"
+                        class="bg-accent hover:bg-cyan-400 text-slate-900 font-semibold px-8 py-3 rounded-xl transition-all duration-200 hover:-translate-y-0.5 shadow-lg focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-800"
+                        aria-label="Complete onboarding and go to dashboard"
+                    >
+                        Get Started
+                    </button>
+                    
+                    <a 
+                        href="/dashboard"
+                        class="border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-slate-200 font-semibold px-8 py-3 rounded-xl transition-all duration-200 hover:-translate-y-0.5 text-center focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+                        aria-label="Skip onboarding and go to dashboard"
+                    >
+                        Skip for Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State (Hidden by default) -->
+    <div id="loading-state" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-slate-800 rounded-xl p-6 text-center">
+            <div class="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="text-slate-300">Setting up your account...</p>
+        </div>
+    </div>
+
+    <script>
+        // Avatar upload preview
+        document.getElementById('avatar-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('avatar-preview');
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover rounded-full" alt="Avatar preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Form submission with loading state
+        document.querySelector('form').addEventListener('submit', function() {
+            document.getElementById('loading-state').classList.remove('hidden');
+        });
+
+        // Handle errors (would be populated by backend)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('error')) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-6 text-center';
+            errorDiv.textContent = 'Upload failed. Please try again with a smaller image.';
+            document.querySelector('form').prepend(errorDiv);
+        }
+    </script>
+</body>
+</html>

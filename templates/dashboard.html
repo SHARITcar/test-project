@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SHARIT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 50%, #0f172a 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg text-slate-100 font-sans antialiased">
+    <!-- Header with user info and account menu -->
+    <header class="sticky top-0 backdrop-blur-sm bg-slate-900/80 border-b border-slate-700/50 z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-xl font-bold text-slate-100">SHARIT</h1>
+                </div>
+                
+                <!-- User account menu -->
+                <div class="relative">
+                    <button class="flex items-center space-x-3 hover:bg-slate-800/50 rounded-lg px-3 py-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400" 
+                            aria-label="Account menu" onclick="toggleAccountMenu()">
+                        <!-- User avatar (initials fallback) -->
+                        <div class="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-slate-900 font-semibold text-sm">
+                            JD
+                        </div>
+                        <span class="hidden sm:block text-sm font-medium">John Doe</span>
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- Dropdown menu (hidden by default) -->
+                    <div class="absolute right-0 mt-2 w-48 rounded-xl bg-slate-800 shadow-lg border border-slate-700 py-2 hidden" id="accountMenu">
+                        <a href="/profile" class="block px-4 py-2 text-sm hover:bg-slate-700 transition-colors duration-200">
+                            Profile Settings
+                        </a>
+                        <hr class="border-slate-700 my-1">
+                        <form method="POST" action="/logout" class="block">
+                            <input type="hidden" name="csrf_token" value="csrf_token_placeholder">
+                            <button type="submit" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-700 transition-colors duration-200 text-red-300">
+                                Sign Out
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Welcome section -->
+        <div class="mb-10">
+            <div class="text-center max-w-2xl mx-auto">
+                <h2 class="text-3xl font-bold text-slate-100 mb-4">Welcome back, John!</h2>
+                <p class="text-lg text-slate-300">Ready to track and split expenses with your groups?</p>
+            </div>
+        </div>
+
+        <!-- Empty state with action cards -->
+        <div class="grid gap-6 md:gap-8">
+            <!-- Empty state message -->
+            <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 text-center">
+                <div class="max-w-md mx-auto">
+                    <div class="w-16 h-16 mx-auto mb-6 rounded-full bg-slate-700/50 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-slate-100 mb-3">No groups yet</h3>
+                    <p class="text-slate-400 mb-6">Create your first group or join an existing one to start tracking shared expenses.</p>
+                </div>
+            </div>
+
+            <!-- Action cards -->
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Create group card -->
+                <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:border-cyan-400/50 transition-all duration-200 hover:-translate-y-0.5 shadow-lg">
+                    <div class="flex items-start space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-slate-100 mb-2">Create a Group</h3>
+                            <p class="text-slate-400 text-sm mb-4">Start a new group for your household, trip, or shared project. Invite others and begin tracking expenses together.</p>
+                            <button class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold py-2.5 px-4 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                                Create Group
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Join group card -->
+                <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:border-slate-600 transition-all duration-200 hover:-translate-y-0.5 shadow-lg">
+                    <div class="flex items-start space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-slate-700/50 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-slate-100 mb-2">Join a Group</h3>
+                            <p class="text-slate-400 text-sm mb-4">Got an invite link or code? Join an existing group and start collaborating on expense tracking right away.</p>
+                            <button class="w-full bg-slate-700 hover:bg-slate-600 text-slate-100 font-semibold py-2.5 px-4 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-500 border border-slate-600">
+                                Join Group
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading state (hidden by default) -->
+        <div class="hidden" id="loadingState">
+            <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 text-center">
+                <div class="animate-spin w-8 h-8 mx-auto mb-4 border-2 border-cyan-400 border-t-transparent rounded-full"></div>
+                <p class="text-slate-400">Loading your groups...</p>
+            </div>
+        </div>
+
+        <!-- Error state (hidden by default) -->
+        <div class="hidden" id="errorState">
+            <div class="bg-red-900/20 backdrop-blur-sm rounded-2xl border border-red-700/50 p-8 text-center">
+                <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-red-900/50 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-red-100 mb-2">Unable to load dashboard</h3>
+                <p class="text-red-300 mb-4">There was a problem loading your groups. Please try refreshing the page.</p>
+                <button class="bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-400">
+                    Retry
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function toggleAccountMenu() {
+            const menu = document.getElementById('accountMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('accountMenu');
+            const button = event.target.closest('[aria-label="Account menu"]');
+            
+            if (!button && !menu.contains(event.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        // Handle keyboard navigation
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                document.getElementById('accountMenu').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

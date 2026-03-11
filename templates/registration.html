@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 min-h-screen">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Create Your Account | SHARIT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <!-- Header / Hero -->
+    <header class="w-full max-w-lg mx-auto mb-8 px-6 md:px-0">
+      <div class="flex flex-col items-center text-center">
+        <h1 class="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">Create your SHARIT account</h1>
+        <p class="text-gray-200 text-base md:text-lg font-normal">Sign up to manage expenses, collaborate, and unlock premium features.</p>
+      </div>
+    </header>
+
+    <!-- Main Content Card -->
+    <main class="w-full max-w-lg mx-auto px-4 md:px-0">
+      <section class="rounded-2xl shadow-lg backdrop-blur bg-gray-800/80 border border-gray-700 p-6 md:p-10 flex flex-col gap-8">
+        <!-- Registration Form -->
+        <form method="POST" action="/register" class="flex flex-col gap-6" autocomplete="off" aria-label="Registration form">
+          <!-- CSRF Token (hidden) -->
+          <input type="hidden" name="csrf_token" value="CSRF_TOKEN_PLACEHOLDER">
+
+          <!-- Email -->
+          <div>
+            <label for="email" class="block text-gray-100 font-semibold mb-1">Email address</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              maxlength="320"
+              autocomplete="email"
+              aria-label="Email address"
+              class="w-full rounded-xl bg-gray-900/70 border border-gray-700 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 text-gray-100 placeholder-gray-400 px-4 py-3 transition-all duration-200 outline-none"
+              placeholder="you@email.com"
+            >
+            <p class="text-xs text-gray-400 mt-1">We'll send a verification email to this address.</p>
+            <!-- Error slot -->
+            <p class="text-sm text-red-400 mt-1 hidden" id="email-error" aria-live="polite"></p>
+          </div>
+
+          <!-- Password -->
+          <div>
+            <label for="password" class="block text-gray-100 font-semibold mb-1">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              minlength="8"
+              maxlength="72"
+              autocomplete="new-password"
+              aria-label="Password"
+              class="w-full rounded-xl bg-gray-900/70 border border-gray-700 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 text-gray-100 placeholder-gray-400 px-4 py-3 transition-all duration-200 outline-none"
+              placeholder="Create a strong password"
+            >
+            <p class="text-xs text-gray-400 mt-1">Minimum 8 characters. Use a mix of letters, numbers, and symbols.</p>
+            <!-- Error slot -->
+            <p class="text-sm text-red-400 mt-1 hidden" id="password-error" aria-live="polite"></p>
+          </div>
+
+          <!-- Confirm Password -->
+          <div>
+            <label for="confirm_password" class="block text-gray-100 font-semibold mb-1">Confirm password</label>
+            <input
+              id="confirm_password"
+              name="confirm_password"
+              type="password"
+              required
+              minlength="8"
+              maxlength="72"
+              autocomplete="new-password"
+              aria-label="Confirm password"
+              class="w-full rounded-xl bg-gray-900/70 border border-gray-700 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 text-gray-100 placeholder-gray-400 px-4 py-3 transition-all duration-200 outline-none"
+              placeholder="Re-enter your password"
+            >
+            <!-- Error slot -->
+            <p class="text-sm text-red-400 mt-1 hidden" id="confirm-password-error" aria-live="polite"></p>
+          </div>
+
+          <!-- Name Fields (Grid on md+) -->
+          <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+              <label for="first_name" class="block text-gray-100 font-semibold mb-1">First name</label>
+              <input
+                id="first_name"
+                name="first_name"
+                type="text"
+                required
+                maxlength="50"
+                autocomplete="given-name"
+                aria-label="First name"
+                class="w-full rounded-xl bg-gray-900/70 border border-gray-700 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 text-gray-100 placeholder-gray-400 px-4 py-3 transition-all duration-200 outline-none"
+                placeholder="First name"
+              >
+              <!-- Error slot -->
+              <p class="text-sm text-red-400 mt-1 hidden" id="first-name-error" aria-live="polite"></p>
+            </div>
+            <div class="flex-1">
+              <label for="last_name" class="block text-gray-100 font-semibold mb-1">Last name</label>
+              <input
+                id="last_name"
+                name="last_name"
+                type="text"
+                required
+                maxlength="50"
+                autocomplete="family-name"
+                aria-label="Last name"
+                class="w-full rounded-xl bg-gray-900/70 border border-gray-700 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 text-gray-100 placeholder-gray-400 px-4 py-3 transition-all duration-200 outline-none"
+                placeholder="Last name"
+              >
+              <!-- Error slot -->
+              <p class="text-sm text-red-400 mt-1 hidden" id="last-name-error" aria-live="polite"></p>
+            </div>
+          </div>
+
+          <!-- Terms Acceptance -->
+          <div class="flex items-start gap-3">
+            <input
+              id="accept_terms"
+              name="accept_terms"
+              type="checkbox"
+              required
+              aria-label="Accept terms and privacy policy"
+              class="mt-1 accent-cyan-400 rounded border-gray-700 focus:ring-cyan-400 transition-all duration-200"
+            >
+            <label for="accept_terms" class="text-gray-200 text-sm select-none">
+              I agree to the
+              <a href="/terms" class="text-cyan-300 hover:underline focus:underline transition-all duration-200" target="_blank" rel="noopener">Terms of Service</a>
+              and
+              <a href="/privacy" class="text-cyan-300 hover:underline focus:underline transition-all duration-200" target="_blank" rel="noopener">Privacy Policy</a>
+            </label>
+          </div>
+          <!-- Error slot -->
+          <p class="text-sm text-red-400 mt-1 hidden" id="terms-error" aria-live="polite"></p>
+
+          <!-- Action Bar -->
+          <div class="flex flex-col md:flex-row items-stretch md:items-center gap-4 mt-2">
+            <button
+              type="submit"
+              class="w-full md:w-auto flex-1 bg-cyan-400 hover:bg-cyan-300 active:bg-cyan-500 text-gray-900 font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/60 focus:ring-offset-2 focus:ring-offset-gray-900"
+              aria-label="Create account"
+            >
+              Create account
+            </button>
+            <a
+              href="/login"
+              class="w-full md:w-auto flex-1 text-cyan-300 hover:text-cyan-200 active:text-cyan-400 border border-cyan-400/40 hover:border-cyan-300 bg-transparent font-semibold py-3 px-6 rounded-xl text-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/60 focus:ring-offset-2 focus:ring-offset-gray-900"
+              aria-label="Already have an account? Log in"
+            >
+              Log in
+            </a>
+          </div>
+
+          <!-- Loading State -->
+          <div class="flex items-center gap-2 justify-center mt-2 hidden" id="loading-state" aria-live="polite">
+            <svg class="animate-spin h-5 w-5 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+            <span class="text-gray-300 text-sm">Creating your account…</span>
+          </div>
+
+          <!-- General Error State -->
+          <div class="mt-2 hidden" id="form-error" aria-live="polite">
+            <div class="bg-red-900/70 border border-red-700 text-red-200 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
+              <svg class="h-5 w-5 text-red-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"/></svg>
+              <span>There was a problem creating your account. Please check your details and try again.</span>
+            </div>
+          </div>
+
+          <!-- Success State (Empty/Confirmation) -->
+          <div class="mt-2 hidden" id="success-state" aria-live="polite">
+            <div class="bg-cyan-900/70 border border-cyan-700 text-cyan-200 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
+              <svg class="h-5 w-5 text-cyan-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              <span>Account created! Please check your email to verify your address.</span>
+            </div>
+          </div>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

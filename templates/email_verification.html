@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - SHARIT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'accent': '#22d3ee'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-slate-100 flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <!-- Hero/Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold mb-3">Verify your email</h1>
+            <p class="text-slate-300 text-lg">We sent a verification code to confirm your account</p>
+        </div>
+
+        <!-- Main Content Card -->
+        <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-slate-700/50">
+            <!-- Email Display -->
+            <div class="mb-6 text-center">
+                <p class="text-sm text-slate-400 mb-2">Verification code sent to:</p>
+                <p class="text-accent font-semibold text-lg" id="email-display">user@example.com</p>
+            </div>
+
+            <!-- Verification Form -->
+            <form class="space-y-6" method="POST" action="/verify-email">
+                <!-- CSRF Token (hidden) -->
+                <input type="hidden" name="csrf_token" value="placeholder_csrf_token">
+
+                <!-- Verification Code Input -->
+                <div class="space-y-2">
+                    <label for="verification-code" class="block text-sm font-medium text-slate-300">
+                        Verification Code
+                    </label>
+                    <input
+                        type="text"
+                        id="verification-code"
+                        name="verification_code"
+                        aria-label="Enter 6-digit verification code"
+                        placeholder="Enter 6-digit code"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        required
+                        class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all duration-200 text-center text-xl font-mono tracking-widest"
+                    >
+                    <!-- Error State (hidden by default) -->
+                    <p class="text-red-400 text-sm hidden" id="code-error">
+                        Invalid verification code. Please try again.
+                    </p>
+                    <!-- Helper Text -->
+                    <p class="text-slate-400 text-sm">
+                        Check your email for the 6-digit verification code
+                    </p>
+                </div>
+
+                <!-- Primary Action Button -->
+                <button
+                    type="submit"
+                    class="w-full bg-accent hover:bg-cyan-400 text-slate-900 font-semibold py-3 px-6 rounded-xl transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    aria-label="Verify email address"
+                >
+                    Verify Email
+                </button>
+            </form>
+
+            <!-- Secondary Actions -->
+            <div class="mt-6 space-y-4 text-center">
+                <!-- Resend Code Link -->
+                <div>
+                    <p class="text-slate-400 text-sm mb-2">Didn't receive the code?</p>
+                    <button
+                        type="button"
+                        class="text-accent hover:text-cyan-300 font-medium text-sm transition-colors duration-200 focus:outline-none focus:underline"
+                        aria-label="Resend verification code"
+                        id="resend-code"
+                    >
+                        Resend verification code
+                    </button>
+                    <!-- Resend Timer (initially hidden) -->
+                    <p class="text-slate-500 text-xs mt-1 hidden" id="resend-timer">
+                        You can resend in <span id="countdown">60</span> seconds
+                    </p>
+                </div>
+
+                <!-- Back to Registration -->
+                <div class="pt-4 border-t border-slate-700/50">
+                    <a
+                        href="/register"
+                        class="text-slate-400 hover:text-slate-300 text-sm transition-colors duration-200 focus:outline-none focus:underline"
+                        aria-label="Go back to registration"
+                    >
+                        ← Back to registration
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State Overlay (initially hidden) -->
+        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center hidden" id="loading-overlay">
+            <div class="bg-slate-800 rounded-xl p-6 shadow-2xl text-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-2 border-accent border-t-transparent mx-auto mb-4"></div>
+                <p class="text-slate-300">Verifying your code...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Form submission handling with loading state
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const submitButton = e.target.querySelector('button[type="submit"]');
+
+            // Show loading state
+            loadingOverlay.classList.remove('hidden');
+            submitButton.disabled = true;
+
+            // Simulate form processing (replace with actual form submission)
+            setTimeout(() => {
+                loadingOverlay.classList.add('hidden');
+                submitButton.disabled = false;
+            }, 2000);
+        });
+
+        // Resend code functionality with timer
+        document.getElementById('resend-code').addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const resendButton = this;
+            const timerElement = document.getElementById('resend-timer');
+            const countdownElement = document.getElementById('countdown');
+
+            // Disable resend button and show timer
+            resendButton.disabled = true;
+            resendButton.classList.add('opacity-50', 'cursor-not-allowed');
+            timerElement.classList.remove('hidden');
+
+            let countdown = 60;
+            const timer = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = countdown;
+
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    resendButton.disabled = false;
+                    resendButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    timerElement.classList.add('hidden');
+                }
+            }, 1000);
+
+            // Here you would make the actual resend API call
+            console.log('Resending verification code...');
+        });
+
+        // Auto-format verification code input
+        document.getElementById('verification-code').addEventListener('input', function(e) {
+            // Only allow numeric input
+            this.value = this.value.replace(/\D/g, '');
+
+            // Clear error state when user starts typing
+            const errorElement = document.getElementById('code-error');
+            if (!errorElement.classList.contains('hidden')) {
+                errorElement.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

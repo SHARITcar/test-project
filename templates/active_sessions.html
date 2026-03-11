@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Sessions - SHARIT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#22d3ee'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-full bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-slate-100">
+    <div class="min-h-screen p-4 md:p-8">
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="max-w-4xl mx-auto">
+                <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">Active Sessions</h1>
+                <p class="text-slate-300 text-lg">Manage your login sessions across all devices</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-4xl mx-auto space-y-6">
+            <!-- Current Session -->
+            <section class="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-slate-700/50">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                        <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                        Current Session
+                    </h2>
+                    <span class="px-3 py-1 bg-green-400/20 text-green-300 text-sm rounded-lg border border-green-400/30">Active Now</span>
+                </div>
+                
+                <div class="grid md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Device</label>
+                        <p class="text-slate-200 font-medium">Chrome on macOS</p>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Location</label>
+                        <p class="text-slate-200">San Francisco, CA</p>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Started</label>
+                        <p class="text-slate-200">2 hours ago</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Action Bar -->
+            <section class="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+                <h2 class="text-xl font-semibold text-white">Other Sessions</h2>
+                <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 hover:-translate-y-0.5 shadow-lg font-medium">
+                    Revoke All Other Sessions
+                </button>
+            </section>
+
+            <!-- Other Sessions List -->
+            <section class="space-y-4">
+                <!-- Session Item 1 -->
+                <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-slate-700/50">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex-1 grid md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <label class="block text-slate-400 mb-1">Device</label>
+                                <p class="text-slate-200 font-medium">Safari on iPhone</p>
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Location</label>
+                                <p class="text-slate-200">San Francisco, CA</p>
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Last Seen</label>
+                                <p class="text-slate-200">3 days ago</p>
+                            </div>
+                        </div>
+                        <button class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5 font-medium whitespace-nowrap">
+                            Revoke Session
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Session Item 2 -->
+                <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-slate-700/50">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex-1 grid md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <label class="block text-slate-400 mb-1">Device</label>
+                                <p class="text-slate-200 font-medium">Chrome on Windows</p>
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Location</label>
+                                <p class="text-slate-200">New York, NY</p>
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Last Seen</label>
+                                <p class="text-slate-200">1 week ago</p>
+                            </div>
+                        </div>
+                        <button class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5 font-medium whitespace-nowrap">
+                            Revoke Session
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Session Item 3 -->
+                <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-slate-700/50">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex-1 grid md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <label class="block text-slate-400 mb-1">Device</label>
+                                <p class="text-slate-200 font-medium">Firefox on Ubuntu</p>
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Location</label>
+                                <p class="text-slate-200">Austin, TX</p>
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Last Seen</label>
+                                <p class="text-slate-200">2 weeks ago</p>
+                            </div>
+                        </div>
+                        <button class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5 font-medium whitespace-nowrap">
+                            Revoke Session
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Empty State (hidden when sessions exist) -->
+            <section class="bg-slate-800/30 backdrop-blur-sm rounded-2xl shadow-lg p-12 border border-slate-700/30 text-center hidden" id="empty-state">
+                <div class="w-16 h-16 bg-slate-700 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-2">No Other Sessions</h3>
+                <p class="text-slate-400">You only have one active session on this device.</p>
+            </section>
+
+            <!-- Navigation -->
+            <section class="pt-8 border-t border-slate-700">
+                <div class="flex flex-col sm:flex-row gap-3 justify-between">
+                    <a href="/profile-settings" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all duration-200 hover:-translate-y-0.5 font-medium text-center">
+                        ← Back to Profile Settings
+                    </a>
+                    <button class="px-6 py-3 bg-accent hover:bg-accent/90 text-slate-900 rounded-xl transition-all duration-200 hover:-translate-y-0.5 shadow-lg font-semibold">
+                        Refresh Sessions
+                    </button>
+                </div>
+            </section>
+
+            <!-- Loading State (hidden by default) -->
+            <section class="bg-slate-800/30 backdrop-blur-sm rounded-2xl shadow-lg p-12 border border-slate-700/30 text-center hidden" id="loading-state">
+                <div class="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p class="text-slate-400">Loading sessions...</p>
+            </section>
+
+            <!-- Error State (hidden by default) -->
+            <section class="bg-red-900/20 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-red-700/50 hidden" id="error-state">
+                <div class="flex items-center gap-3 mb-2">
+                    <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h3 class="font-semibold text-red-300">Unable to load sessions</h3>
+                </div>
+                <p class="text-red-200 text-sm mb-4">There was a problem loading your active sessions. Please try again.</p>
+                <button class="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-lg transition-all duration-200 font-medium">
+                    Retry
+                </button>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
