@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from routes.active_sessions import bp as active_sessions_bp
@@ -14,6 +16,7 @@ from routes.registration import bp as registration_bp
 load_dotenv()
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "change-me-in-env")
 app.register_blueprint(active_sessions_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(change_password_bp)
@@ -31,9 +34,24 @@ def register():
     return render_template("registration.html")
 
 
+@app.route("/terms", methods=["GET"])
+def terms():
+    return render_template("terms.html")
+
+
+@app.route("/privacy", methods=["GET"])
+def privacy():
+    return render_template("privacy.html")
+
+
 @app.route("/email-verification", methods=["GET"])
 def email_verification():
     return render_template("email_verification.html")
+
+
+@app.route("/email-verified", methods=["GET"])
+def email_verified():
+    return render_template("email_verified.html")
 
 
 @app.route("/login", methods=["GET"])
@@ -49,6 +67,11 @@ def active_sessions():
 @app.route("/password-reset-confirm", methods=["GET"])
 def password_reset_confirm():
     return render_template("password_reset_confirm.html")
+
+
+@app.route("/password-reset-success", methods=["GET"])
+def password_reset_success():
+    return render_template("password_reset_success.html")
 
 
 @app.route("/onboarding", methods=["GET"])

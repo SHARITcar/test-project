@@ -1,3 +1,5 @@
+import hashlib
+
 from flask import Blueprint, request, jsonify
 from sqlalchemy import text
 from your_db import engine
@@ -14,12 +16,40 @@ def upload_avatar_file(avatar_file):
     return None
 
 
+def _extract_token_hash() -> str | None:
+    authorization = request.headers.get("Authorization", "").strip()
+    if not authorization:
+        return None
+
+    if authorization.lower().startswith("bearer "):
+        authorization = authorization[7:].strip()
+
+    if not authorization:
+        return None
+
+    return hashlib.sha256(authorization.encode()).hexdigest()
+
+
 @bp.route("/api/complete_onboarding", methods=["POST"])
 def complete_onboarding():
     """Mark user as onboarded and optionally save avatar URL."""
     data = request.get_json() or {}
-
+    token_hash = _extract_token_hash()
     user_id = data.get("user_id")
+    if not user_id and token_hash:
+        with engine.connect() as connection:
+            session_user = connection.execute(
+                text(
+                    "SELECT user_id FROM user_sessions "
+                    "WHERE token_hash = :token_hash AND revoked_at IS NULL "
+                    "AND expires_at > NOW() "
+                    "LIMIT 1"
+                ),
+                {"token_hash": token_hash},
+            ).mappings().first()
+        if session_user:
+            user_id = session_user["user_id"]
+
     if not user_id:
         return jsonify({"error": "User ID is required"}), 400
 

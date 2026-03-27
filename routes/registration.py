@@ -2,12 +2,23 @@
 # SCREEN: registration
 # ============================================
 
-from flask import Blueprint, request, jsonify, render_template
+import re
+
+from flask import Blueprint, request, jsonify, render_template, current_app
 from sqlalchemy import text
 from werkzeug.security import generate_password_hash
+from routes.email_verification import send_verification_email
 from your_db import engine
 
 bp = Blueprint('registration', __name__)
+
+PASSWORD_PATTERN = re.compile(
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$'
+)
+
+
+def is_strong_password(password: str | None) -> bool:
+    return bool(password and PASSWORD_PATTERN.match(password))
 
 
 @bp.route('/register', methods=['GET'])
@@ -35,6 +46,11 @@ def register_user():
     if password != confirm_password:
         return jsonify({'error': 'Passwords do not match'}), 400
 
+    if not is_strong_password(password):
+        return jsonify({
+            'error': 'Password must be 8-72 characters and include uppercase, lowercase, number, and symbol'
+        }), 400
+
     try:
         with engine.begin() as connection:
             # Check uniqueness before insert so we can return a clear error.
@@ -49,8 +65,30 @@ def register_user():
             connection.execute(
                 text(
                     '''
-                    INSERT INTO users (email, password_hash, first_name, last_name, email_verified)
-                    VALUES (:email, :password_hash, :first_name, :last_name, false)
+                    INSERT INTO users (
+                        user_id,
+                        email,
+                        password_hash,
+                        first_name,
+                        last_name,
+                        email_verified,
+                        onboarding_completed,
+                        account_status,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (
+                        UUID(),
+                        :email,
+                        :password_hash,
+                        :first_name,
+                        :last_name,
+                        false,
+                        false,
+                        'active',
+                        NOW(),
+                        NOW()
+                    )
                     '''
                 ),
                 {
@@ -61,11 +99,25 @@ def register_user():
                 },
             )
 
+        try:
+            send_verification_email(email, first_name)
+        except Exception as exc:
+            current_app.logger.exception('Failed to send verification email after registration')
+            error_payload = {'error': 'Failed to send verification email'}
+            if current_app.debug:
+                error_payload['details'] = str(exc)
+            return jsonify(error_payload), 500
+
         return jsonify(
             {
-                'message': 'User account created successfully. Please verify your email address.'
+                'message': 'User account created successfully. Please verify your email address.',
+                'next_step': 'Check your inbox for the verification email.'
             }
         ), 200
 
-    except Exception:
-        return jsonify({'error': 'Failed to create user account'}), 500
+    except Exception as exc:
+        current_app.logger.exception('Failed to create user account')
+        error_payload = {'error': 'Failed to create user account'}
+        if current_app.debug:
+            error_payload['details'] = str(exc)
+        return jsonify(error_payload), 500

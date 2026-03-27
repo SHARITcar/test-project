@@ -19,7 +19,7 @@
     <main class="w-full max-w-lg mx-auto px-4 md:px-0">
       <section class="rounded-2xl shadow-lg backdrop-blur bg-gray-800/80 border border-gray-700 p-6 md:p-10 flex flex-col gap-8">
         <!-- Registration Form -->
-        <form method="POST" action="/register" class="flex flex-col gap-6" autocomplete="off" aria-label="Registration form">
+        <form class="flex flex-col gap-6" autocomplete="off" aria-label="Registration form" id="registration-form">
           <!-- CSRF Token (hidden) -->
           <input type="hidden" name="csrf_token" value="CSRF_TOKEN_PLACEHOLDER">
 
@@ -79,6 +79,43 @@
             >
             <!-- Error slot -->
             <p class="text-sm text-red-400 mt-1 hidden" id="confirm-password-error" aria-live="polite"></p>
+          </div>
+
+          <!-- Password Requirements -->
+          <div id="password-requirements" class="bg-gray-900/40 rounded-xl p-4 border border-gray-700/80">
+            <h3 class="text-sm font-medium text-gray-200 mb-3">Password Requirements:</h3>
+            <ul class="space-y-2 text-sm text-gray-300">
+              <li class="flex items-center">
+                <div class="w-4 h-4 rounded-full border border-gray-500 mr-3 flex items-center justify-center">
+                  <div class="w-1.5 h-1.5 bg-gray-500 rounded-full hidden requirement-dot" data-requirement="length"></div>
+                </div>
+                At least 8 characters long
+              </li>
+              <li class="flex items-center">
+                <div class="w-4 h-4 rounded-full border border-gray-500 mr-3 flex items-center justify-center">
+                  <div class="w-1.5 h-1.5 bg-gray-500 rounded-full hidden requirement-dot" data-requirement="uppercase"></div>
+                </div>
+                One uppercase letter
+              </li>
+              <li class="flex items-center">
+                <div class="w-4 h-4 rounded-full border border-gray-500 mr-3 flex items-center justify-center">
+                  <div class="w-1.5 h-1.5 bg-gray-500 rounded-full hidden requirement-dot" data-requirement="lowercase"></div>
+                </div>
+                One lowercase letter
+              </li>
+              <li class="flex items-center">
+                <div class="w-4 h-4 rounded-full border border-gray-500 mr-3 flex items-center justify-center">
+                  <div class="w-1.5 h-1.5 bg-gray-500 rounded-full hidden requirement-dot" data-requirement="number"></div>
+                </div>
+                One number
+              </li>
+              <li class="flex items-center">
+                <div class="w-4 h-4 rounded-full border border-gray-500 mr-3 flex items-center justify-center">
+                  <div class="w-1.5 h-1.5 bg-gray-500 rounded-full hidden requirement-dot" data-requirement="special"></div>
+                </div>
+                One special character (!@#$%^&*)
+              </li>
+            </ul>
           </div>
 
           <!-- Name Fields (Grid on md+) -->
@@ -179,5 +216,146 @@
         </form>
       </section>
     </main>
+    <script>
+    function isStrongPassword(password) {
+      return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/.test(password);
+    }
+
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    const requirementDots = document.querySelectorAll('.requirement-dot');
+
+    function validatePassword(password) {
+      return {
+        length: password.length >= 8,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /\d/.test(password),
+        special: /[^A-Za-z0-9]/.test(password)
+      };
+    }
+
+    function updateRequirements(password) {
+      const requirements = validatePassword(password);
+
+      requirementDots.forEach(function(dot) {
+        const requirement = dot.dataset.requirement;
+        const parent = dot.parentElement;
+
+        if (requirements[requirement]) {
+          dot.classList.remove('hidden', 'bg-gray-500');
+          dot.classList.add('bg-cyan-400');
+          parent.classList.remove('border-gray-500');
+          parent.classList.add('border-cyan-400');
+        } else {
+          dot.classList.add('hidden');
+          dot.classList.remove('bg-cyan-400');
+          dot.classList.add('bg-gray-500');
+          parent.classList.add('border-gray-500');
+          parent.classList.remove('border-cyan-400');
+        }
+      });
+
+      return Object.values(requirements).every(function(requirement) {
+        return requirement;
+      });
+    }
+
+    passwordInput.addEventListener('input', function() {
+      const isValid = updateRequirements(this.value);
+      const errorDiv = document.getElementById('password-error');
+
+      if (this.value && !isValid) {
+        errorDiv.textContent = 'Use 8-72 characters with uppercase, lowercase, number, and symbol.';
+        errorDiv.classList.remove('hidden');
+        this.classList.add('border-red-500');
+        this.classList.remove('border-gray-700');
+      } else {
+        errorDiv.classList.add('hidden');
+        this.classList.remove('border-red-500');
+        this.classList.add('border-gray-700');
+      }
+    });
+
+    confirmPasswordInput.addEventListener('input', function() {
+      const errorDiv = document.getElementById('confirm-password-error');
+
+      if (this.value && this.value !== passwordInput.value) {
+        errorDiv.textContent = 'Passwords do not match.';
+        errorDiv.classList.remove('hidden');
+        this.classList.add('border-red-500');
+        this.classList.remove('border-gray-700');
+      } else {
+        errorDiv.classList.add('hidden');
+        this.classList.remove('border-red-500');
+        this.classList.add('border-gray-700');
+      }
+    });
+
+    document.getElementById('registration-form').addEventListener('submit', async function(event) {
+      event.preventDefault();
+
+      const loadingState = document.getElementById('loading-state');
+      const formError = document.getElementById('form-error');
+      const successState = document.getElementById('success-state');
+      const password = passwordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
+      const passwordError = document.getElementById('password-error');
+
+      formError.classList.add('hidden');
+      successState.classList.add('hidden');
+      passwordError.classList.add('hidden');
+
+      if (password !== confirmPassword) {
+        document.getElementById('confirm-password-error').textContent = 'Passwords do not match.';
+        document.getElementById('confirm-password-error').classList.remove('hidden');
+        return;
+      }
+
+      if (!isStrongPassword(password)) {
+        passwordError.classList.remove('hidden');
+        return;
+      }
+
+      document.getElementById('confirm-password-error').classList.add('hidden');
+      loadingState.classList.remove('hidden');
+
+      const payload = {
+        email: document.getElementById('email').value.trim(),
+        password,
+        confirm_password: confirmPassword,
+        first_name: document.getElementById('first_name').value.trim(),
+        last_name: document.getElementById('last_name').value.trim()
+      };
+
+      try {
+        const response = await fetch('/api/register_user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const responseBody = await response.json().catch(function() {
+          return {};
+        });
+
+        if (!response.ok) {
+          const errorMessage = responseBody.details || responseBody.error || 'There was a problem creating your account. Please check your details and try again.';
+          throw new Error(errorMessage);
+        }
+
+        successState.classList.remove('hidden');
+        event.target.reset();
+      } catch (error) {
+        formError.querySelector('span').textContent = error.message;
+        formError.classList.remove('hidden');
+      } finally {
+        loadingState.classList.add('hidden');
+      }
+    });
+    </script>
   </body>
 </html>

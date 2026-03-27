@@ -1,18 +1,34 @@
+import hashlib
+
 from flask import Blueprint, request, jsonify
 from sqlalchemy import text
 from your_db import engine  # change this import to your actual engine location
 
 bp = Blueprint("dashboard", __name__)
 
+
+def _extract_token_hash() -> str | None:
+    authorization = request.headers.get("Authorization", "").strip()
+    if not authorization:
+        return None
+
+    if authorization.lower().startswith("bearer "):
+        authorization = authorization[7:].strip()
+
+    if not authorization:
+        return None
+
+    return hashlib.sha256(authorization.encode()).hexdigest()
+
 @bp.route("/api/get_user_profile", methods=["GET"])
 def get_user_profile():
     """Fetch current user account details for profile display."""
-    session_token = request.headers.get("Authorization")
-    if not session_token:
+    token_hash = _extract_token_hash()
+    if not token_hash:
         return jsonify({"error": "Missing session token"}), 401
 
     query = text("""
-        SELECT user_id, email, first_name, last_name, avatar_url, created_at
+        SELECT user_id, email, first_name, last_name, avatar_url, created_at, onboarding_completed
         FROM users
         WHERE user_id = (
             SELECT user_id
@@ -24,7 +40,7 @@ def get_user_profile():
     """)
 
     with engine.connect() as conn:
-        result = conn.execute(query, {"token": session_token}).mappings().first()
+        result = conn.execute(query, {"token": token_hash}).mappings().first()
 
     if not result:
         return jsonify({"error": "User not found"}), 404
@@ -35,8 +51,8 @@ def get_user_profile():
 @bp.route("/api/logout_user", methods=["POST"])
 def logout_user():
     """Explicitly end current user session."""
-    session_token = request.headers.get("Authorization")
-    if not session_token:
+    token_hash = _extract_token_hash()
+    if not token_hash:
         return jsonify({"error": "Missing session token"}), 401
 
     query = text("""
@@ -48,6 +64,6 @@ def logout_user():
     """)
 
     with engine.begin() as conn:
-        conn.execute(query, {"token": session_token})
+        conn.execute(query, {"token": token_hash})
 
     return jsonify({"message": "Logout successful"}), 200

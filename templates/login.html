@@ -34,7 +34,7 @@
 
             <!-- Login Form Card -->
             <div class="backdrop-blur-lg bg-white/5 border border-white/10 rounded-2xl shadow-2xl p-8">
-                <form method="POST" action="/api/authenticate" class="space-y-6" id="login-form">
+                <form class="space-y-6" id="login-form">
                     <!-- CSRF Token -->
                     <input type="hidden" name="csrf_token" value="secure_csrf_token_placeholder">
 
@@ -173,7 +173,48 @@
                 return;
             }
             
-            // Form will submit naturally to backend
+            e.preventDefault();
+
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                    remember_me: document.getElementById('remember-me').checked
+                })
+            })
+                .then(async function(response) {
+                    const payload = await response.json().catch(function() {
+                        return {};
+                    });
+
+                    if (!response.ok) {
+                        const message = payload.message || payload.error || 'Invalid email or password. Please try again.';
+                        throw new Error(message);
+                    }
+
+                    if (payload.data && payload.data.session_token) {
+                        const storage = document.getElementById('remember-me').checked ? window.localStorage : window.sessionStorage;
+                        window.localStorage.removeItem('session_token');
+                        window.sessionStorage.removeItem('session_token');
+                        storage.setItem('session_token', payload.data.session_token);
+                    }
+
+                    if (payload.data && payload.data.user && payload.data.user.onboarding_completed) {
+                        window.location.href = '/dashboard';
+                        return;
+                    }
+
+                    window.location.href = '/onboarding';
+                })
+                .catch(function(error) {
+                    showFormError(error.message);
+                    resetButton();
+                });
         });
         
         function showFormError(message) {

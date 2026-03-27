@@ -7,7 +7,7 @@ from sqlalchemy import text
 from email_validator import validate_email, EmailNotValidError
 import secrets
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from your_db import engine
 from your_email_service import send_password_reset_email
 
@@ -94,7 +94,7 @@ def request_password_reset():
                 # Always continue processing to prevent timing attacks
                 # Generate token regardless of whether user exists
                 reset_token = secrets.token_urlsafe(32)  # 256-bit entropy
-                token_expiration = datetime.utcnow() + timedelta(hours=1)  # 1 hour expiration
+                token_expiration = datetime.now(UTC) + timedelta(hours=1)  # 1 hour expiration
 
                 if user_result:
                     user_id = user_result.user_id
@@ -110,7 +110,7 @@ def request_password_reset():
                                 invalidated_reason = 'new_request'
                             WHERE user_id = :user_id
                             AND used_at IS NULL
-                            AND expires_at > NOW()
+                            AND expires_at > UTC_TIMESTAMP()
                         """)
 
                         conn.execute(invalidate_query, {'user_id': user_id})
@@ -119,7 +119,15 @@ def request_password_reset():
                         insert_token_query = text("""
                             INSERT INTO password_reset_tokens
                             (token_id, user_id, token_hash, expires_at, created_at, ip_address, user_agent)
-                            VALUES (:token_id, :user_id, :token_hash, :expires_at, NOW(), :ip_address, :user_agent)
+                            VALUES (
+                                :token_id,
+                                :user_id,
+                                :token_hash,
+                                UTC_TIMESTAMP() + INTERVAL 1 HOUR,
+                                UTC_TIMESTAMP(),
+                                :ip_address,
+                                :user_agent
+                            )
                         """)
 
                         # Hash the token for database storage (similar to password hashing)
@@ -131,7 +139,6 @@ def request_password_reset():
                             'token_id': token_id,
                             'user_id': user_id,
                             'token_hash': token_hash,
-                            'expires_at': token_expiration,
                             'ip_address': request.remote_addr,
                             'user_agent': request.headers.get('User-Agent', '')[:500]  # Limit length
                         })

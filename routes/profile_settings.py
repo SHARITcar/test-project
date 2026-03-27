@@ -9,7 +9,7 @@ from your_db import engine
 bp = Blueprint('profile_settings', __name__)
 
 
-@bp.route('/api/register_user', methods=['POST'])
+@bp.route('/api/demo/register_user', methods=['POST'])
 def register_user():
     '''Create new user account with email verification requirement.'''
 
@@ -28,7 +28,7 @@ def register_user():
     return jsonify({"message": "Success confirmation with email address for verification step"})
 
 
-@bp.route('/api/verify_email', methods=['POST'])
+@bp.route('/api/demo/verify_email', methods=['POST'])
 def verify_email():
     '''Confirm user email ownership and activate account.'''
 

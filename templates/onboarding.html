@@ -40,7 +40,7 @@
                     <p class="text-slate-400">Help your friends recognize you in groups (optional)</p>
                 </div>
                 
-                <form method="POST" action="/api/complete-onboarding" enctype="multipart/form-data" class="max-w-md mx-auto">
+                <form class="max-w-md mx-auto">
                     <input type="hidden" name="csrf_token" value="CSRF_TOKEN_PLACEHOLDER">
                     
                     <!-- Avatar Preview -->
@@ -131,13 +131,14 @@
                         Get Started
                     </button>
                     
-                    <a 
-                        href="/dashboard"
+                    <button 
+                        type="button"
+                        onclick="completeOnboarding()"
                         class="border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-slate-200 font-semibold px-8 py-3 rounded-xl transition-all duration-200 hover:-translate-y-0.5 text-center focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-800"
                         aria-label="Skip onboarding and go to dashboard"
                     >
                         Skip for Now
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
@@ -152,6 +153,65 @@
     </div>
 
     <script>
+        function getSessionToken() {
+            return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
+        }
+
+        async function loadCurrentUser() {
+            const token = getSessionToken();
+            if (!token) {
+                window.location.href = '/login';
+                return null;
+            }
+
+            const response = await fetch('/api/get_user_profile', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                window.localStorage.removeItem('session_token');
+                window.sessionStorage.removeItem('session_token');
+                window.location.href = '/login';
+                return null;
+            }
+
+            const payload = await response.json();
+            return payload.user_profile;
+        }
+
+        async function completeOnboarding() {
+            const token = getSessionToken();
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            document.getElementById('loading-state').classList.remove('hidden');
+
+            const response = await fetch('/api/complete_onboarding', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({})
+            });
+
+            if (!response.ok) {
+                document.getElementById('loading-state').classList.add('hidden');
+                const url = new URL(window.location.href);
+                url.searchParams.set('error', '1');
+                window.location.href = url.toString();
+                return;
+            }
+
+            window.location.href = '/dashboard';
+        }
+
         // Avatar upload preview
         document.getElementById('avatar-upload').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -167,8 +227,9 @@
         });
 
         // Form submission with loading state
-        document.querySelector('form').addEventListener('submit', function() {
-            document.getElementById('loading-state').classList.remove('hidden');
+        document.querySelector('form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            completeOnboarding();
         });
 
         // Handle errors (would be populated by backend)
@@ -179,6 +240,20 @@
             errorDiv.textContent = 'Upload failed. Please try again with a smaller image.';
             document.querySelector('form').prepend(errorDiv);
         }
+
+        loadCurrentUser().then(function(userProfile) {
+            if (!userProfile) {
+                return;
+            }
+
+            if (userProfile.onboarding_completed) {
+                window.location.href = '/dashboard';
+                return;
+            }
+
+            const initials = `${(userProfile.first_name || 'S')[0] || 'S'}${(userProfile.last_name || 'H')[0] || 'H'}`;
+            document.getElementById('avatar-preview').textContent = initials.toUpperCase();
+        });
     </script>
 </body>
 </html>

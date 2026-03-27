@@ -4,7 +4,7 @@ from your_db import engine  # replace with your real DB import
 
 bp = Blueprint("active_sessions", __name__)
 
-@bp.route("/api/register_user", methods=["POST"])
+@bp.route("/api/demo/register_user", methods=["POST"])
 def register_user():
     email = request.json.get("email")
     password = request.json.get("password")
@@ -25,7 +25,7 @@ def register_user():
     }), 201
 
 
-@bp.route("/api/verify_email", methods=["POST"])
+@bp.route("/api/demo/verify_email", methods=["POST"])
 def verify_email():
     token = request.json.get("token")
 
