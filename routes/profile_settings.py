@@ -2,49 +2,88 @@
 # SCREEN: profile_settings
 # ============================================
 
+import logging
 from flask import Blueprint, request, jsonify
-from sqlalchemy import text
-from your_db import engine
+from supabase_client import db_for, get_user_from_token, get_token_from_request
 
 bp = Blueprint('profile_settings', __name__)
+logger = logging.getLogger(__name__)
+
+_UPDATABLE_FIELDS = {'first_name', 'last_name', 'avatar_url'}
 
 
-@bp.route('/api/demo/register_user', methods=['POST'])
-def register_user():
-    '''Create new user account with email verification requirement.'''
+@bp.route('/api/profile_settings', methods=['GET'])
+def get_profile_settings():
+    """Fetch the current user's full profile for the settings screen."""
+    token = get_token_from_request(request)
+    if not token:
+        return jsonify({'error': 'Authorization header required'}), 401
 
-    email = request.json.get('email')
-    password = request.json.get('password')
+    user = get_user_from_token(token)
+    if not user:
+        return jsonify({'error': 'Invalid or expired session'}), 401
 
-    query = text("""
-        INSERT INTO users (email, password_hash, email_verified)
-        VALUES (:email, :password_hash, false)
-    """)
+    try:
+        result = (
+            db_for(token)
+            .table('profiles')
+            .select('first_name, last_name, avatar_url, onboarding_completed, created_at, updated_at')
+            .eq('id', str(user.id))
+            .single()
+            .execute()
+        )
 
-    with engine.connect() as conn:
-        conn.execute(query, {'email': email, 'password_hash': password})
-        conn.commit()
+        if not result.data:
+            return jsonify({'error': 'Profile not found'}), 404
 
-    return jsonify({"message": "Success confirmation with email address for verification step"})
+        profile = result.data
+        profile['id'] = str(user.id)
+        profile['email'] = user.email
 
+        return jsonify({'profile': profile}), 200
 
-@bp.route('/api/demo/verify_email', methods=['POST'])
-def verify_email():
-    '''Confirm user email ownership and activate account.'''
-
-    verification_token = request.json.get('verification_token')
-
-    query = text("""
-        UPDATE users
-        SET email_verified = true
-        WHERE verification_token = :verification_token
-    """)
-
-    with engine.connect() as conn:
-        conn.execute(query, {'verification_token': verification_token})
-        conn.commit()
-
-    return jsonify({"message": "Verification success status and redirect to onboarding"})
+    except Exception as exc:
+        logger.error(f"Error fetching profile settings for {user.id}: {exc}")
+        return jsonify({'error': 'Failed to fetch profile'}), 500
 
 
-# Add routes for other functions/actions as needed
+@bp.route('/api/profile_settings', methods=['PUT'])
+def update_profile_settings():
+    """Update editable profile fields (first_name, last_name, avatar_url)."""
+    token = get_token_from_request(request)
+    if not token:
+        return jsonify({'error': 'Authorization header required'}), 401
+
+    user = get_user_from_token(token)
+    if not user:
+        return jsonify({'error': 'Invalid or expired session'}), 401
+
+    data = request.get_json() or {}
+    update_data = {k: v for k, v in data.items() if k in _UPDATABLE_FIELDS}
+
+    if not update_data:
+        return jsonify({'error': 'No valid fields to update'}), 400
+
+    for field in ('first_name', 'last_name'):
+        if field in update_data:
+            update_data[field] = (update_data[field] or '').strip()
+            if not update_data[field]:
+                return jsonify({'error': f'{field} cannot be empty'}), 400
+
+    try:
+        result = (
+            db_for(token)
+            .table('profiles')
+            .update(update_data)
+            .eq('id', str(user.id))
+            .execute()
+        )
+
+        if not result.data:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        return jsonify({'message': 'Profile updated', 'profile': result.data[0]}), 200
+
+    except Exception as exc:
+        logger.error(f"Error updating profile for {user.id}: {exc}")
+        return jsonify({'error': 'Failed to update profile'}), 500

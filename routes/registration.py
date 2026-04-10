@@ -2,13 +2,10 @@
 # SCREEN: registration
 # ============================================
 
+import os
 import re
-
-from flask import Blueprint, request, jsonify, render_template, current_app
-from sqlalchemy import text
-from werkzeug.security import generate_password_hash
-from routes.email_verification import send_verification_email
-from your_db import engine
+from flask import Blueprint, request, jsonify, render_template
+from supabase_client import supabase
 
 bp = Blueprint('registration', __name__)
 
@@ -28,15 +25,19 @@ def registration_page():
 
 @bp.route('/api/register_user', methods=['POST'])
 def register_user():
-    '''Create new user account with email verification requirement.'''
-
+    """
+    Create a new user account via Supabase Auth.
+    Supabase handles password hashing and sends the verification email automatically.
+    first_name and last_name are stored in user metadata, then picked up by the
+    handle_new_user trigger which writes them to public.profiles.
+    """
     if not request.is_json:
         return jsonify({'error': 'Content-Type must be application/json'}), 400
 
     data = request.get_json() or {}
     email = (data.get('email') or '').strip().lower()
-    password = data.get('password')
-    confirm_password = data.get('confirm_password')
+    password = data.get('password', '')
+    confirm_password = data.get('confirm_password', '')
     first_name = (data.get('first_name') or '').strip()
     last_name = (data.get('last_name') or '').strip()
 
@@ -52,72 +53,29 @@ def register_user():
         }), 400
 
     try:
-        with engine.begin() as connection:
-            # Check uniqueness before insert so we can return a clear error.
-            existing_user = connection.execute(
-                text('SELECT 1 FROM users WHERE email = :email LIMIT 1'),
-                {'email': email},
-            ).first()
-
-            if existing_user:
-                return jsonify({'error': 'Email already registered'}), 409
-
-            connection.execute(
-                text(
-                    '''
-                    INSERT INTO users (
-                        user_id,
-                        email,
-                        password_hash,
-                        first_name,
-                        last_name,
-                        email_verified,
-                        onboarding_completed,
-                        account_status,
-                        created_at,
-                        updated_at
-                    )
-                    VALUES (
-                        UUID(),
-                        :email,
-                        :password_hash,
-                        :first_name,
-                        :last_name,
-                        false,
-                        false,
-                        'active',
-                        NOW(),
-                        NOW()
-                    )
-                    '''
-                ),
-                {
-                    'email': email,
-                    'password_hash': generate_password_hash(password),
+        redirect_url = f"{os.getenv('APP_BASE_URL', 'http://localhost:5000')}/email-verified"
+        response = supabase.auth.sign_up({
+            'email': email,
+            'password': password,
+            'options': {
+                'data': {
                     'first_name': first_name,
                     'last_name': last_name,
                 },
-            )
+                'email_redirect_to': redirect_url,
+            },
+        })
 
-        try:
-            send_verification_email(email, first_name)
-        except Exception as exc:
-            current_app.logger.exception('Failed to send verification email after registration')
-            error_payload = {'error': 'Failed to send verification email'}
-            if current_app.debug:
-                error_payload['details'] = str(exc)
-            return jsonify(error_payload), 500
+        if response.user is None:
+            return jsonify({'error': 'Registration failed'}), 400
 
-        return jsonify(
-            {
-                'message': 'User account created successfully. Please verify your email address.',
-                'next_step': 'Check your inbox for the verification email.'
-            }
-        ), 200
+        return jsonify({
+            'message': 'Account created. Please check your email to verify your address.',
+            'next_step': 'Check your inbox for the verification email.',
+        }), 200
 
     except Exception as exc:
-        current_app.logger.exception('Failed to create user account')
-        error_payload = {'error': 'Failed to create user account'}
-        if current_app.debug:
-            error_payload['details'] = str(exc)
-        return jsonify(error_payload), 500
+        msg = str(exc).lower()
+        if 'already registered' in msg or 'already exists' in msg or 'user already' in msg:
+            return jsonify({'error': 'Email already registered'}), 409
+        return jsonify({'error': 'Registration failed', 'details': str(exc)}), 500

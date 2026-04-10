@@ -2,6 +2,9 @@ import os
 
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
+
+load_dotenv()
+
 from routes.active_sessions import bp as active_sessions_bp
 from routes.dashboard import bp as dashboard_bp
 from routes.change_password import bp as change_password_bp
@@ -12,8 +15,6 @@ from routes.password_reset import bp as password_reset_bp
 from routes.password_reset_confirm import bp as password_reset_confirm_bp
 from routes.profile_settings import bp as profile_settings_bp
 from routes.registration import bp as registration_bp
-
-load_dotenv()
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "change-me-in-env")
