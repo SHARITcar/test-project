@@ -140,6 +140,14 @@
     </div>
 
     <script>
+        // Redirect already-logged-in users to dashboard
+        (function() {
+            const token = window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
+            if (token) {
+                window.location.replace('/dashboard');
+            }
+        })();
+
         // Form submission handling with loading states
         document.getElementById('login-form').addEventListener('submit', function(e) {
             const button = document.getElementById('login-button');
