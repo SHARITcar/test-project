@@ -78,4 +78,6 @@ def register_user():
         msg = str(exc).lower()
         if 'already registered' in msg or 'already exists' in msg or 'user already' in msg:
             return jsonify({'error': 'Email already registered'}), 409
+        if 'network is unreachable' in msg or 'connection' in msg or 'timeout' in msg:
+            return jsonify({'error': 'Cannot reach authentication service. Please try again shortly.'}), 503
         return jsonify({'error': 'Registration failed', 'details': str(exc)}), 500

@@ -29,71 +29,47 @@
         <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-slate-700/50">
             <!-- Email Display -->
             <div class="mb-6 text-center">
-                <p class="text-sm text-slate-400 mb-2">Verification code sent to:</p>
-                <p class="text-accent font-semibold text-lg" id="email-display">user@example.com</p>
+                <p class="text-sm text-slate-400 mb-2">Verification link sent to:</p>
+                <p class="text-accent font-semibold text-lg" id="email-display">your email address</p>
             </div>
 
-            <!-- Verification Form -->
-            <form class="space-y-6" method="POST" action="/verify-email">
-                <!-- CSRF Token (hidden) -->
-                <input type="hidden" name="csrf_token" value="placeholder_csrf_token">
+            <!-- Instruction -->
+            <div class="bg-slate-700/40 rounded-xl p-5 mb-6 text-center space-y-2">
+                <svg class="w-10 h-10 text-accent mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                <p class="text-slate-200 font-medium">Check your inbox</p>
+                <p class="text-slate-400 text-sm">
+                    We've sent a verification link to your email address.<br>
+                    Click the link in the email to activate your account.
+                </p>
+            </div>
 
-                <!-- Verification Code Input -->
-                <div class="space-y-2">
-                    <label for="verification-code" class="block text-sm font-medium text-slate-300">
-                        Verification Code
-                    </label>
-                    <input
-                        type="text"
-                        id="verification-code"
-                        name="verification_code"
-                        aria-label="Enter 6-digit verification code"
-                        placeholder="Enter 6-digit code"
-                        maxlength="6"
-                        pattern="[0-9]{6}"
-                        required
-                        class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all duration-200 text-center text-xl font-mono tracking-widest"
-                    >
-                    <!-- Error State (hidden by default) -->
-                    <p class="text-red-400 text-sm hidden" id="code-error">
-                        Invalid verification code. Please try again.
-                    </p>
-                    <!-- Helper Text -->
-                    <p class="text-slate-400 text-sm">
-                        Check your email for the 6-digit verification code
-                    </p>
-                </div>
-
-                <!-- Primary Action Button -->
-                <button
-                    type="submit"
-                    class="w-full bg-accent hover:bg-cyan-400 text-slate-900 font-semibold py-3 px-6 rounded-xl transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                    aria-label="Verify email address"
-                >
-                    Verify Email
-                </button>
-            </form>
+            <!-- Feedback States -->
+            <div class="hidden mb-4 bg-green-900/30 border border-green-700/50 rounded-xl p-3 text-green-300 text-sm text-center" id="resend-success">
+                Verification email resent. Please check your inbox.
+            </div>
+            <div class="hidden mb-4 bg-red-900/30 border border-red-700/50 rounded-xl p-3 text-red-300 text-sm text-center" id="resend-error">
+                Could not resend the email. Please try again.
+            </div>
 
             <!-- Secondary Actions -->
-            <div class="mt-6 space-y-4 text-center">
-                <!-- Resend Code Link -->
+            <div class="space-y-4 text-center">
                 <div>
-                    <p class="text-slate-400 text-sm mb-2">Didn't receive the code?</p>
+                    <p class="text-slate-400 text-sm mb-2">Didn't receive the email?</p>
                     <button
                         type="button"
-                        class="text-accent hover:text-cyan-300 font-medium text-sm transition-colors duration-200 focus:outline-none focus:underline"
-                        aria-label="Resend verification code"
-                        id="resend-code"
+                        class="text-accent hover:text-cyan-300 font-medium text-sm transition-colors duration-200 focus:outline-none focus:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Resend verification email"
+                        id="resend-btn"
                     >
-                        Resend verification code
+                        Resend verification email
                     </button>
-                    <!-- Resend Timer (initially hidden) -->
                     <p class="text-slate-500 text-xs mt-1 hidden" id="resend-timer">
                         You can resend in <span id="countdown">60</span> seconds
                     </p>
                 </div>
 
-                <!-- Back to Registration -->
                 <div class="pt-4 border-t border-slate-700/50">
                     <a
                         href="/register"
@@ -105,73 +81,60 @@
                 </div>
             </div>
         </div>
-
-        <!-- Loading State Overlay (initially hidden) -->
-        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center hidden" id="loading-overlay">
-            <div class="bg-slate-800 rounded-xl p-6 shadow-2xl text-center">
-                <div class="animate-spin rounded-full h-8 w-8 border-2 border-accent border-t-transparent mx-auto mb-4"></div>
-                <p class="text-slate-300">Verifying your code...</p>
-            </div>
-        </div>
     </div>
 
     <script>
-        // Form submission handling with loading state
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const loadingOverlay = document.getElementById('loading-overlay');
-            const submitButton = e.target.querySelector('button[type="submit"]');
+        // Show the email address if passed as a query param
+        const params = new URLSearchParams(window.location.search);
+        const email = params.get('email');
+        if (email) {
+            document.getElementById('email-display').textContent = email;
+        }
 
-            // Show loading state
-            loadingOverlay.classList.remove('hidden');
-            submitButton.disabled = true;
+        // Resend button with cooldown timer
+        document.getElementById('resend-btn').addEventListener('click', async function() {
+            const btn = this;
+            const timerEl = document.getElementById('resend-timer');
+            const countdownEl = document.getElementById('countdown');
+            const successEl = document.getElementById('resend-success');
+            const errorEl = document.getElementById('resend-error');
 
-            // Simulate form processing (replace with actual form submission)
-            setTimeout(() => {
-                loadingOverlay.classList.add('hidden');
-                submitButton.disabled = false;
-            }, 2000);
-        });
+            successEl.classList.add('hidden');
+            errorEl.classList.add('hidden');
+            btn.disabled = true;
 
-        // Resend code functionality with timer
-        document.getElementById('resend-code').addEventListener('click', function(e) {
-            e.preventDefault();
+            try {
+                const response = await fetch('/api/resend_verification_email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email || '' })
+                });
+                const payload = await response.json().catch(function() { return {}; });
+                if (response.ok) {
+                    successEl.classList.remove('hidden');
+                } else {
+                    errorEl.textContent = payload.error || 'Could not resend the email. Please try again.';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorEl.textContent = 'Network error. Please try again.';
+                errorEl.classList.remove('hidden');
+            }
 
-            const resendButton = this;
-            const timerElement = document.getElementById('resend-timer');
-            const countdownElement = document.getElementById('countdown');
-
-            // Disable resend button and show timer
-            resendButton.disabled = true;
-            resendButton.classList.add('opacity-50', 'cursor-not-allowed');
-            timerElement.classList.remove('hidden');
-
+            // Cooldown timer
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            timerEl.classList.remove('hidden');
             let countdown = 60;
-            const timer = setInterval(() => {
+            const timer = setInterval(function() {
                 countdown--;
-                countdownElement.textContent = countdown;
-
+                countdownEl.textContent = countdown;
                 if (countdown <= 0) {
                     clearInterval(timer);
-                    resendButton.disabled = false;
-                    resendButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                    timerElement.classList.add('hidden');
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    timerEl.classList.add('hidden');
                 }
             }, 1000);
-
-            // Here you would make the actual resend API call
-            console.log('Resending verification code...');
-        });
-
-        // Auto-format verification code input
-        document.getElementById('verification-code').addEventListener('input', function(e) {
-            // Only allow numeric input
-            this.value = this.value.replace(/\D/g, '');
-
-            // Clear error state when user starts typing
-            const errorElement = document.getElementById('code-error');
-            if (!errorElement.classList.contains('hidden')) {
-                errorElement.classList.add('hidden');
-            }
         });
     </script>
 </body>

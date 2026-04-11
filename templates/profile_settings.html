@@ -21,7 +21,7 @@
 
         <!-- Profile Form Card -->
         <section aria-label="Profile details" class="md:col-span-2 bg-white/5 backdrop-blur rounded-2xl shadow-lg p-6 md:p-10 flex flex-col gap-8">
-          <form method="POST" enctype="multipart/form-data" class="flex flex-col gap-8" autocomplete="off">
+          <form id="profile-settings-form" class="flex flex-col gap-8" autocomplete="off">
             <!-- CSRF Token (hidden) -->
             <input type="hidden" name="csrf_token" value="CSRF_TOKEN_PLACEHOLDER">
 
@@ -167,5 +167,63 @@
         </aside>
       </div>
     </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('profile-settings-form');
+      const loadingEl = document.getElementById('profile_loading');
+      const errorEl = document.getElementById('profile_error');
+      const successEl = document.getElementById('profile_success');
+
+      function getToken() {
+        return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
+      }
+
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const token = getToken();
+        if (!token) {
+          errorEl.querySelector('p').textContent = 'You are not logged in. Please log in again.';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+
+        successEl.classList.add('hidden');
+        errorEl.classList.add('hidden');
+        loadingEl.classList.remove('hidden');
+        form.querySelector('button[type="submit"]').disabled = true;
+
+        try {
+          const response = await fetch('/api/profile_settings', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({
+              first_name: document.getElementById('first_name').value.trim(),
+              last_name: document.getElementById('last_name').value.trim()
+            })
+          });
+
+          const payload = await response.json().catch(function() { return {}; });
+
+          if (!response.ok) {
+            errorEl.querySelector('p').textContent = payload.error || 'Could not save changes. Please try again.';
+            errorEl.classList.remove('hidden');
+            return;
+          }
+
+          successEl.classList.remove('hidden');
+        } catch (err) {
+          errorEl.querySelector('p').textContent = 'Network error. Please try again.';
+          errorEl.classList.remove('hidden');
+        } finally {
+          loadingEl.classList.add('hidden');
+          form.querySelector('button[type="submit"]').disabled = false;
+        }
+      });
+    });
+  </script>
   </body>
 </html>

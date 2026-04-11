@@ -35,6 +35,11 @@ def register():
     return render_template("registration.html")
 
 
+@app.route("/registration-confirm", methods=["GET"])
+def registration_confirm():
+    return render_template("registration_confirm.html")
+
+
 @app.route("/terms", methods=["GET"])
 def terms():
     return render_template("terms.html")

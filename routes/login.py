@@ -87,6 +87,9 @@ def authenticate_user():
                 'error': 'Please verify your email before logging in.',
                 'action_required': 'email_verification',
             }), 403
+        if 'network is unreachable' in msg or 'connection' in msg or 'timeout' in msg:
+            logger.error(f"Supabase unreachable for {email}: {exc}")
+            return jsonify({'success': False, 'error': 'Cannot reach authentication service. Please try again shortly.'}), 503
         logger.error(f"Login error for {email}: {exc}")
         return jsonify({'success': False, 'error': 'Authentication service unavailable'}), 500
 

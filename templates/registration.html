@@ -347,8 +347,7 @@
           throw new Error(errorMessage);
         }
 
-        successState.classList.remove('hidden');
-        event.target.reset();
+        window.location.href = '/registration-confirm';
       } catch (error) {
         formError.querySelector('span').textContent = error.message;
         formError.classList.remove('hidden');

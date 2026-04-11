@@ -7,7 +7,9 @@
 # APP_BASE_URL/email-verified with session tokens in the URL hash fragment.
 # ============================================
 
+import os
 from flask import Blueprint, redirect, request, jsonify
+from supabase_client import supabase
 
 bp = Blueprint("email_verification", __name__)
 
@@ -23,6 +25,26 @@ def verify_email_from_link():
     if error:
         return redirect(f"/email-verification?error={error}")
     return redirect("/email-verified")
+
+
+@bp.route("/api/resend_verification_email", methods=["POST"])
+def resend_verification_email():
+    """
+    Resend the Supabase verification email for a given email address.
+    Expects JSON body: { "email": "user@example.com" }
+    """
+    data = request.get_json() or {}
+    email = (data.get("email") or "").strip().lower()
+
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
+    try:
+        redirect_url = f"{os.getenv('APP_BASE_URL', 'http://localhost:5000')}/email-verified"
+        supabase.auth.resend({"type": "signup", "email": email, "options": {"email_redirect_to": redirect_url}})
+        return jsonify({"message": "Verification email resent. Please check your inbox."}), 200
+    except Exception as exc:
+        return jsonify({"error": "Failed to resend verification email"}), 500
 
 
 @bp.route("/api/verification_email_preview", methods=["POST"])
