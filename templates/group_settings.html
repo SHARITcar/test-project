@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}Group Settings - SHARIT{% endblock %}
+{% block body_class %}min-h-screen bg-shell text-slate-100{% endblock %}
+{% block head_extra %}
+<style>
+    .bg-shell { background: radial-gradient(circle at 20% 10%, #0f172a, #020617 60%); }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <main class="mx-auto max-w-3xl px-4 py-8">
+    <header class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-semibold">Group settings</h1>
+      <a href="/dashboard" class="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">Back to dashboard</a>
+    </header>
+
+    <section id="loadingState" class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
+      <p class="text-slate-300">Loading group...</p>
+    </section>
+
+    <section id="errorState" class="hidden rounded-xl border border-red-400/40 bg-red-500/10 p-6 text-red-200">
+      <p id="errorText">Unable to load this group right now.</p>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <button id="retryButton" class="rounded-md bg-red-500 px-3 py-2 text-white">Retry</button>
+        <a href="/dashboard" class="rounded-md border border-red-300/40 px-3 py-2 text-red-100">Go to dashboard</a>
+      </div>
+    </section>
+
+    <div id="contentState" class="hidden space-y-6">
+      <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
+        <h2 class="mb-4 text-lg font-semibold">Group info</h2>
+        <p id="saveMessage" class="mb-4 hidden rounded-lg border p-3 text-sm"></p>
+
+        <label class="mb-1 block text-sm text-slate-300" for="groupName">Group name</label>
+        <input id="groupName" type="text" class="mb-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+        <p id="groupNameError" class="mb-3 text-sm text-red-300"></p>
+
+        <label class="mb-1 block text-sm text-slate-300" for="licensePlate">License plate</label>
+        <input id="licensePlate" type="text" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+
+        <label class="mb-1 block text-sm text-slate-300" for="pricePerKilometer">Price per kilometer (&euro;)</label>
+        <input id="pricePerKilometer" type="number" min="0.0001" max="100" step="0.01" class="mb-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+        <p id="pricePerKilometerError" class="mb-3 text-sm text-red-300"></p>
+
+        <label class="mb-1 block text-sm text-slate-300" for="reminderType">Reminder type</label>
+        <select id="reminderType" class="mb-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></select>
+        <p id="reminderTypeError" class="mb-3 text-sm text-red-300"></p>
+        <p id="physicalReminderNote" class="mb-3 hidden text-sm text-amber-200">This group uses a physical reminder sticker. Switching to a different reminder type isn't supported from settings.</p>
+
+        <h3 class="mb-2 mt-2 text-sm font-medium uppercase tracking-wide text-slate-400">Internal agreements</h3>
+        <label class="mb-1 block text-sm text-slate-300" for="agreementKeys">Keys</label>
+        <textarea id="agreementKeys" rows="2" class="mb-3 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
+        <label class="mb-1 block text-sm text-slate-300" for="agreementParking">Parking</label>
+        <textarea id="agreementParking" rows="2" class="mb-3 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
+        <label class="mb-1 block text-sm text-slate-300" for="agreementHygiene">Hygiene</label>
+        <textarea id="agreementHygiene" rows="2" class="mb-3 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
+        <label class="mb-1 block text-sm text-slate-300" for="agreementDamage">Damage</label>
+        <textarea id="agreementDamage" rows="2" class="mb-3 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
+        <label class="mb-1 block text-sm text-slate-300" for="agreementDocuments">Documents</label>
+        <textarea id="agreementDocuments" rows="2" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
+
+        <button id="saveButton" class="rounded-md bg-cyan-500 px-4 py-2 font-semibold text-slate-900">Save changes</button>
+      </section>
+
+      <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
+        <h2 class="mb-4 text-lg font-semibold">Members</h2>
+        <ul id="membersList" class="space-y-2"></ul>
+      </section>
+
+      <section class="rounded-xl border border-red-400/30 bg-red-500/5 p-6">
+        <h2 class="mb-2 text-lg font-semibold text-red-200">Leave group</h2>
+        <p class="mb-4 text-sm text-red-200/80">You'll lose access to this group's trips and expenses. This can't be undone from here.</p>
+        <button id="leaveButton" class="rounded-md border border-red-400/60 px-4 py-2 text-red-200 hover:bg-red-500/10">Leave group</button>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    function getSessionToken() {
+      return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
+    }
+
+    function getGroupId() {
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      return parts.length >= 2 ? parts[1] : '';
+    }
+
+    const state = {
+      token: getSessionToken(),
+      groupId: getGroupId(),
+      currentUserId: null,
+      group: null,
+      members: [],
+      reminderTypes: [],
+    };
+
+    const els = {
+      loadingState: document.getElementById('loadingState'),
+      errorState: document.getElementById('errorState'),
+      errorText: document.getElementById('errorText'),
+      retryButton: document.getElementById('retryButton'),
+      contentState: document.getElementById('contentState'),
+      saveMessage: document.getElementById('saveMessage'),
+      groupName: document.getElementById('groupName'),
+      groupNameError: document.getElementById('groupNameError'),
+      licensePlate: document.getElementById('licensePlate'),
+      pricePerKilometer: document.getElementById('pricePerKilometer'),
+      pricePerKilometerError: document.getElementById('pricePerKilometerError'),
+      reminderType: document.getElementById('reminderType'),
+      reminderTypeError: document.getElementById('reminderTypeError'),
+      physicalReminderNote: document.getElementById('physicalReminderNote'),
+      agreementKeys: document.getElementById('agreementKeys'),
+      agreementParking: document.getElementById('agreementParking'),
+      agreementHygiene: document.getElementById('agreementHygiene'),
+      agreementDamage: document.getElementById('agreementDamage'),
+      agreementDocuments: document.getElementById('agreementDocuments'),
+      saveButton: document.getElementById('saveButton'),
+      membersList: document.getElementById('membersList'),
+      leaveButton: document.getElementById('leaveButton'),
+    };
+
+    function setVisible(view) {
+      els.loadingState.classList.toggle('hidden', view !== 'loading');
+      els.errorState.classList.toggle('hidden', view !== 'error');
+      els.contentState.classList.toggle('hidden', view !== 'content');
+    }
+
+    async function fetchJson(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: {
+          'Authorization': `Bearer ${state.token}`,
+          'Accept': 'application/json',
+          ...(options.headers || {}),
+        },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(payload.error || 'Request failed');
+        error.fieldErrors = payload.fieldErrors || {};
+        throw error;
+      }
+      return payload;
+    }
+
+    function clearFieldErrors() {
+      els.groupNameError.textContent = '';
+      els.pricePerKilometerError.textContent = '';
+      els.reminderTypeError.textContent = '';
+    }
+
+    function showSaveMessage(message, kind) {
+      els.saveMessage.textContent = message;
+      els.saveMessage.className = `mb-4 rounded-lg border p-3 text-sm ${
+        kind === 'success'
+          ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100'
+          : 'border-red-400/40 bg-red-500/10 text-red-200'
+      }`;
+      els.saveMessage.classList.remove('hidden');
+    }
+
+    function renderReminderOptions() {
+      els.reminderType.innerHTML = '';
+      const selectable = state.reminderTypes.filter((option) => !option.is_physical);
+      const currentIsPhysical = !selectable.some((option) => option.name === state.group.reminder_type);
+
+      if (currentIsPhysical && state.group.reminder_type) {
+        const physicalOption = document.createElement('option');
+        physicalOption.value = state.group.reminder_type;
+        physicalOption.textContent = `${state.group.reminder_type} (physical)`;
+        els.reminderType.appendChild(physicalOption);
+        els.reminderType.disabled = true;
+        els.physicalReminderNote.classList.remove('hidden');
+      } else {
+        els.reminderType.disabled = false;
+        els.physicalReminderNote.classList.add('hidden');
+        selectable.forEach((option) => {
+          const el = document.createElement('option');
+          el.value = option.name;
+          el.textContent = option.name;
+          if (option.name === state.group.reminder_type) {
+            el.selected = true;
+          }
+          els.reminderType.appendChild(el);
+        });
+      }
+    }
+
+    function renderGroup() {
+      const group = state.group;
+      els.groupName.value = group.name || '';
+      els.licensePlate.value = group.license_plate || '';
+      els.pricePerKilometer.value = group.price_per_km || '';
+
+      const agreements = group.internal_agreements || {};
+      els.agreementKeys.value = agreements.keys || '';
+      els.agreementParking.value = agreements.parking || '';
+      els.agreementHygiene.value = agreements.hygiene || '';
+      els.agreementDamage.value = agreements.damage || '';
+      els.agreementDocuments.value = agreements.documents || '';
+
+      renderReminderOptions();
+    }
+
+    function renderMembers() {
+      els.membersList.innerHTML = '';
+      state.members.forEach((member) => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm';
+
+        const info = document.createElement('div');
+        info.innerHTML = `<p class="font-medium">${member.name}</p><p class="text-xs text-slate-400">${member.role || 'member'}</p>`;
+        li.appendChild(info);
+
+        const isSelf = member.userId === state.currentUserId;
+        const currentUserIsOwner = state.members.some((m) => m.userId === state.currentUserId && m.role === 'owner');
+        if (!isSelf && currentUserIsOwner) {
+          const removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.textContent = 'Remove';
+          removeBtn.className = 'rounded-md border border-red-400/50 px-3 py-1 text-red-200 hover:bg-red-500/10';
+          removeBtn.addEventListener('click', () => removeMember(member.userId));
+          li.appendChild(removeBtn);
+        }
+
+        els.membersList.appendChild(li);
+      });
+    }
+
+    async function removeMember(userId) {
+      if (!window.confirm('Remove this member from the group?')) {
+        return;
+      }
+      try {
+        await fetchJson(`/api/groups/${encodeURIComponent(state.groupId)}/members/${encodeURIComponent(userId)}/remove`, {
+          method: 'POST',
+        });
+        await loadMembers();
+      } catch (error) {
+        alert(error.message || 'Could not remove that member right now.');
+      }
+    }
+
+    async function loadMembers() {
+      const payload = await fetchJson(`/api/groups/${encodeURIComponent(state.groupId)}/members`);
+      state.members = payload.members || [];
+      renderMembers();
+    }
+
+    async function loadGroup() {
+      setVisible('loading');
+      if (!state.token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      try {
+        const profilePayload = await fetchJson('/api/get_user_profile');
+        state.currentUserId = (profilePayload.user_profile || {}).id || null;
+
+        const [groupPayload, reminderPayload] = await Promise.all([
+          fetchJson(`/api/groups/${encodeURIComponent(state.groupId)}`),
+          fetchJson('/api/reminder-types'),
+        ]);
+
+        state.group = groupPayload.group;
+        state.reminderTypes = reminderPayload.reminder_types || [];
+
+        renderGroup();
+        await loadMembers();
+        setVisible('content');
+      } catch (error) {
+        setVisible('error');
+        els.errorText.textContent = error.message || 'Unable to load this group right now.';
+      }
+    }
+
+    async function saveGroup() {
+      clearFieldErrors();
+      els.saveMessage.classList.add('hidden');
+      els.saveButton.disabled = true;
+      els.saveButton.textContent = 'Saving...';
+
+      try {
+        const body = {
+          groupName: els.groupName.value,
+          licensePlate: els.licensePlate.value,
+          pricePerKilometer: Number(els.pricePerKilometer.value),
+          internalAgreements: {
+            keys: els.agreementKeys.value,
+            parking: els.agreementParking.value,
+            hygiene: els.agreementHygiene.value,
+            damage: els.agreementDamage.value,
+            documents: els.agreementDocuments.value,
+          },
+        };
+        if (!els.reminderType.disabled) {
+          body.reminderType = els.reminderType.value;
+        }
+
+        const payload = await fetchJson(`/api/groups/${encodeURIComponent(state.groupId)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        state.group = payload.group;
+        renderGroup();
+        showSaveMessage('Changes saved.', 'success');
+      } catch (error) {
+        const fieldErrors = error.fieldErrors || {};
+        if (fieldErrors.groupName) els.groupNameError.textContent = fieldErrors.groupName;
+        if (fieldErrors.pricePerKilometer) els.pricePerKilometerError.textContent = fieldErrors.pricePerKilometer;
+        if (fieldErrors.reminderType) els.reminderTypeError.textContent = fieldErrors.reminderType;
+        showSaveMessage(error.message || 'Could not save changes right now.', 'error');
+      } finally {
+        els.saveButton.disabled = false;
+        els.saveButton.textContent = 'Save changes';
+      }
+    }
+
+    async function leaveGroup() {
+      if (!window.confirm('Leave this group?')) {
+        return;
+      }
+      try {
+        await fetchJson(`/api/groups/${encodeURIComponent(state.groupId)}/leave`, { method: 'POST' });
+        window.location.href = '/dashboard';
+      } catch (error) {
+        alert(error.message || 'Could not leave this group right now.');
+      }
+    }
+
+    els.retryButton.addEventListener('click', loadGroup);
+    els.saveButton.addEventListener('click', saveGroup);
+    els.leaveButton.addEventListener('click', leaveGroup);
+
+    if (!state.groupId) {
+      setVisible('error');
+      els.errorText.textContent = 'Missing group.';
+    } else {
+      loadGroup();
+    }
+  </script>
+{% endblock %}

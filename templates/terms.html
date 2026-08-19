@@ -1,23 +1,10 @@
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Algemene voorwaarden - SHARIT</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        accent: '#22d3ee'
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-slate-100">
+{% extends "base.html" %}
+
+{% block title %}Algemene voorwaarden - SHARIT{% endblock %}
+{% block lang %}nl{% endblock %}
+{% block body_class %}min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-slate-100{% endblock %}
+
+{% block content %}
     <main class="max-w-4xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
         <div class="bg-slate-800/60 border border-slate-700/60 rounded-3xl shadow-2xl backdrop-blur-sm p-6 sm:p-8 lg:p-10">
             <header class="mb-8">
@@ -132,5 +119,4 @@
             </div>
         </div>
     </main>
-</body>
-</html>
+{% endblock %}

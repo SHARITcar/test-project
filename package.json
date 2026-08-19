@@ -7,7 +7,9 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "tailwindcss -i static/css/input.css -o static/css/app.css --minify",
+    "watch:css": "tailwindcss -i static/css/input.css -o static/css/app.css --watch"
   },
   "repository": {
     "type": "git",
@@ -25,5 +27,9 @@
     "@supabase/supabase-js": "^2.103.0",
     "dotenv": "^17.4.1",
     "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
   }
 }

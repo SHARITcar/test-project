@@ -1,23 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In - SHARIT</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        accent: '#22d3ee'
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800">
+{% extends "base.html" %}
+
+{% block title %}Sign In - SHARIT{% endblock %}
+{% block body_class %}min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800{% endblock %}
+
+{% block content %}
     <!-- Background decoration -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
         <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl"></div>
@@ -140,10 +126,21 @@
     </div>
 
     <script>
+        function getInviteTokenFromQuery() {
+            const params = new URLSearchParams(window.location.search);
+            return (params.get('invite') || '').trim();
+        }
+
+        const inviteToken = getInviteTokenFromQuery();
+
         // Redirect already-logged-in users to dashboard
         (function() {
             const token = window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
             if (token) {
+                if (inviteToken) {
+                    window.location.replace(`/invite/${encodeURIComponent(inviteToken)}`);
+                    return;
+                }
                 window.location.replace('/dashboard');
             }
         })();
@@ -213,10 +210,18 @@
                     }
 
                     if (payload.data && payload.data.user && payload.data.user.onboarding_completed) {
+                        if (inviteToken) {
+                            window.location.href = `/invite/${encodeURIComponent(inviteToken)}`;
+                            return;
+                        }
                         window.location.href = '/dashboard';
                         return;
                     }
 
+                    if (inviteToken) {
+                        window.location.href = `/onboarding?invite=${encodeURIComponent(inviteToken)}`;
+                        return;
+                    }
                     window.location.href = '/onboarding';
                 })
                 .catch(function(error) {
@@ -261,6 +266,12 @@
                 this.classList.remove('border-red-500');
             }
         });
+
+        if (inviteToken) {
+            const registerLink = document.querySelector('a[href="/register"]');
+            if (registerLink) {
+                registerLink.href = `/register?invite=${encodeURIComponent(inviteToken)}`;
+            }
+        }
     </script>
-</body>
-</html>
+{% endblock %}

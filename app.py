@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,6 +15,9 @@ from routes.password_reset import bp as password_reset_bp
 from routes.password_reset_confirm import bp as password_reset_confirm_bp
 from routes.profile_settings import bp as profile_settings_bp
 from routes.registration import bp as registration_bp
+from routes.groups import bp as groups_bp
+from routes.trips import bp as trips_bp
+from routes.costs import bp as costs_bp
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "change-me-in-env")
@@ -28,6 +31,9 @@ app.register_blueprint(password_reset_bp)
 app.register_blueprint(password_reset_confirm_bp)
 app.register_blueprint(profile_settings_bp)
 app.register_blueprint(registration_bp)
+app.register_blueprint(groups_bp)
+app.register_blueprint(trips_bp)
+app.register_blueprint(costs_bp)
 
 
 @app.route("/register", methods=["GET"])
@@ -88,6 +94,29 @@ def onboarding():
 @app.route("/dashboard", methods=["GET"])
 def dashboard():
     return render_template("dashboard.html")
+
+
+@app.route("/create-group", methods=["GET"])
+def create_group_page():
+    return render_template("create_group.html")
+
+
+@app.route("/invite/<token>", methods=["GET"])
+def invite_group_page(token):
+    return render_template("invite_join.html", invite_token=token)
+
+
+@app.route("/groups/<group_id>/settings", methods=["GET"])
+def group_settings_page(group_id):
+    return render_template("group_settings.html", group_id=group_id)
+
+
+@app.route("/groups/<group_id>/trips", methods=["GET"])
+@app.route("/groups/<group_id>/costs", methods=["GET"])
+@app.route("/groups/<group_id>/activity", methods=["GET"])
+def group_workspace_page(group_id):
+    # The workspace now lives inline on /dashboard (active group, floating tab nav).
+    return redirect("/dashboard")
 
 
 @app.route("/profile-settings", methods=["GET"])

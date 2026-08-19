@@ -87,3 +87,46 @@ def update_profile_settings():
     except Exception as exc:
         logger.error(f"Error updating profile for {user.id}: {exc}")
         return jsonify({'error': 'Failed to update profile'}), 500
+
+
+_KNOWN_TIPS = {'trips_tip', 'costs_tip', 'dashboard_tip', 'insurance_banner'}
+
+
+@bp.route('/api/profile/tips-seen', methods=['POST'])
+def mark_tip_seen():
+    """Mark a contextual onboarding tip as seen (shown only once per user, account-level)."""
+    token = get_token_from_request(request)
+    if not token:
+        return jsonify({'error': 'Authorization header required'}), 401
+
+    user = get_user_from_token(token)
+    if not user:
+        return jsonify({'error': 'Invalid or expired session'}), 401
+
+    data = request.get_json() or {}
+    tip = str(data.get('tip') or '').strip()
+    if tip not in _KNOWN_TIPS:
+        return jsonify({'error': f"tip must be one of {', '.join(sorted(_KNOWN_TIPS))}"}), 400
+
+    try:
+        client = db_for(token)
+        current = (
+            client.table('profiles')
+            .select('seen_tips')
+            .eq('id', str(user.id))
+            .single()
+            .execute()
+        )
+        if not current.data:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        seen_tips = current.data.get('seen_tips') or []
+        if tip not in seen_tips:
+            seen_tips = seen_tips + [tip]
+            client.table('profiles').update({'seen_tips': seen_tips}).eq('id', str(user.id)).execute()
+
+        return jsonify({'seen_tips': seen_tips}), 200
+
+    except Exception as exc:
+        logger.error(f"Error marking tip seen for {user.id}: {exc}")
+        return jsonify({'error': 'Failed to update tip state'}), 500

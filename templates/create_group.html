@@ -1,0 +1,637 @@
+{% extends "base.html" %}
+
+{% block title %}Create Group - SHARIT{% endblock %}
+{% block body_class %}min-h-screen bg-shell text-slate-100{% endblock %}
+{% block head_extra %}
+<style>
+    .bg-shell { background: linear-gradient(160deg, #020617 0%, #111827 45%, #0f172a 100%); }
+    .step-dot.active { background-color: #06b6d4; border-color: #06b6d4; color: #001018; }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <main class="mx-auto max-w-3xl px-4 py-8">
+    <div class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-semibold">Create shared car group</h1>
+      <a href="/dashboard" class="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">Exit</a>
+    </div>
+
+    <section id="errorBanner" class="mb-4 hidden rounded-lg border border-red-400/40 bg-red-500/10 p-4 text-red-200">
+      <p id="errorBannerText">Something went wrong.</p>
+      <button id="retryButton" class="mt-3 rounded-md bg-red-500 px-3 py-2 text-white">Retry</button>
+    </section>
+
+    <section class="mb-6 rounded-xl border border-slate-800 bg-slate-900/70 p-4">
+      <ol class="grid grid-cols-3 gap-2 text-xs sm:grid-cols-6" id="stepIndicators"></ol>
+    </section>
+
+    <form id="createGroupForm" class="rounded-xl border border-slate-800 bg-slate-900/70 p-5" novalidate>
+      <div id="step1" class="step-pane">
+        <h2 class="mb-3 text-lg font-semibold">Basics</h2>
+        <label class="mb-2 block text-sm font-medium" for="groupName">Group name *</label>
+        <input id="groupName" name="groupName" type="text" maxlength="120" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+        <p id="groupNameError" class="mt-1 text-sm text-red-300"></p>
+
+        <label class="mt-4 mb-2 block text-sm font-medium" for="licensePlate">License plate</label>
+        <input id="licensePlate" name="licensePlate" type="text" maxlength="20" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2" placeholder="Optional">
+
+        <label class="mt-4 mb-2 block text-sm font-medium" for="groupPhoto">Group photo</label>
+        <input id="groupPhoto" name="groupPhoto" type="file" accept="image/*" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+        <p id="groupPhotoError" class="mt-1 text-sm text-red-300"></p>
+      </div>
+
+      <div id="step2" class="step-pane hidden">
+        <h2 class="mb-3 text-lg font-semibold">Price per kilometer</h2>
+        <label class="mb-2 block text-sm" for="pricePerKilometer">Set your price *</label>
+        <input id="pricePerKilometer" type="range" min="0.05" max="5" step="0.01" value="0.35" class="w-full">
+        <p class="mt-2 text-cyan-300"><span id="priceDisplay">0.35</span> per km</p>
+        <p id="pricePerKilometerError" class="mt-1 text-sm text-red-300"></p>
+      </div>
+
+      <div id="step3" class="step-pane hidden">
+        <h2 class="mb-3 text-lg font-semibold">Reminder type</h2>
+        <p class="mb-3 text-sm text-slate-300">Choose a reminder option *</p>
+        <div id="reminderTypeOptions" class="space-y-2"></div>
+        <p id="reminderTypeError" class="mt-1 text-sm text-red-300"></p>
+      </div>
+
+      <div id="step4" class="step-pane hidden">
+        <h2 class="mb-3 text-lg font-semibold">Internal agreements</h2>
+        <p class="mb-4 text-sm text-slate-300">Document your shared rules.</p>
+        <div class="space-y-3">
+          <textarea id="agreementKeys" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2" rows="2" placeholder="Keys"></textarea>
+          <textarea id="agreementParking" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2" rows="2" placeholder="Parking"></textarea>
+          <textarea id="agreementHygiene" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2" rows="2" placeholder="Hygiene"></textarea>
+          <textarea id="agreementDamage" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2" rows="2" placeholder="Damage"></textarea>
+          <textarea id="agreementDocuments" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2" rows="2" placeholder="Documents"></textarea>
+        </div>
+      </div>
+
+      <div id="step5" class="step-pane hidden">
+        <h2 class="mb-3 text-lg font-semibold">Fixed costs overview</h2>
+        <div id="fixedCostsList" class="space-y-3"></div>
+        <button type="button" id="addFixedCost" class="mt-3 rounded-md border border-cyan-500 px-3 py-2 text-cyan-300">Add cost</button>
+      </div>
+
+      <div id="step6" class="step-pane hidden">
+        <h2 class="mb-3 text-lg font-semibold">Invite others</h2>
+        <p class="mb-2 text-sm text-slate-300">Share this invite link after creating the group.</p>
+        <div class="rounded-md border border-slate-700 bg-slate-950 p-3 text-sm break-all" id="inviteLinkBox">Generating invite link...</div>
+        <div class="mt-3 flex gap-2">
+          <button type="button" id="copyInviteLink" class="rounded-md border border-slate-700 px-3 py-2 text-sm">Copy</button>
+          <button type="button" id="shareInviteLink" class="rounded-md border border-slate-700 px-3 py-2 text-sm">Share</button>
+        </div>
+
+        <div id="physicalReminderBlock" class="mt-5 hidden rounded-lg border border-amber-400/40 bg-amber-500/10 p-3">
+          <p class="mb-2 text-sm text-amber-100">Physical reminder selected. Shipping and payment are required.</p>
+          <input id="shippingStreet" type="text" class="mb-2 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2" placeholder="Street address">
+          <input id="shippingCity" type="text" class="mb-2 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2" placeholder="City">
+          <input id="shippingPostalCode" type="text" class="mb-2 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2" placeholder="Postal code">
+          <label class="inline-flex items-center gap-2 text-sm">
+            <input id="paymentConfirmed" type="checkbox">
+            <span>I confirm payment is completed for physical reminder shipping.</span>
+          </label>
+          <p id="shippingAddressError" class="mt-1 text-sm text-red-300"></p>
+          <p id="paymentConfirmedError" class="mt-1 text-sm text-red-300"></p>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center justify-between">
+        <button type="button" id="backButton" class="rounded-md border border-slate-700 px-4 py-2">Back</button>
+        <button type="button" id="nextButton" class="rounded-md bg-cyan-500 px-4 py-2 font-semibold text-slate-900">Next</button>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'create_group_draft_v1';
+    const STEPS = ['Basics', 'Price', 'Reminder', 'Agreements', 'Fixed costs', 'Invite'];
+
+    function getSessionToken() {
+      return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
+    }
+
+    const state = {
+      token: getSessionToken(),
+      step: 0,
+      reminderTypes: [],
+      inviteLink: '',
+      submitting: false,
+      lastPayload: null,
+      draft: {
+        idempotencyKey: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+        groupName: '',
+        licensePlate: '',
+        pricePerKilometer: 0.35,
+        reminderType: '',
+        internalAgreements: { keys: '', parking: '', hygiene: '', damage: '', documents: '' },
+        fixedCosts: [],
+        shippingAddress: { street: '', city: '', postalCode: '' },
+        paymentConfirmed: false,
+      },
+      groupPhotoFile: null,
+    };
+
+    const els = {
+      form: document.getElementById('createGroupForm'),
+      stepIndicators: document.getElementById('stepIndicators'),
+      panes: Array.from(document.querySelectorAll('.step-pane')),
+      nextButton: document.getElementById('nextButton'),
+      backButton: document.getElementById('backButton'),
+      groupName: document.getElementById('groupName'),
+      licensePlate: document.getElementById('licensePlate'),
+      groupPhoto: document.getElementById('groupPhoto'),
+      groupPhotoError: document.getElementById('groupPhotoError'),
+      groupNameError: document.getElementById('groupNameError'),
+      pricePerKilometer: document.getElementById('pricePerKilometer'),
+      priceDisplay: document.getElementById('priceDisplay'),
+      pricePerKilometerError: document.getElementById('pricePerKilometerError'),
+      reminderTypeOptions: document.getElementById('reminderTypeOptions'),
+      reminderTypeError: document.getElementById('reminderTypeError'),
+      fixedCostsList: document.getElementById('fixedCostsList'),
+      addFixedCost: document.getElementById('addFixedCost'),
+      inviteLinkBox: document.getElementById('inviteLinkBox'),
+      copyInviteLink: document.getElementById('copyInviteLink'),
+      shareInviteLink: document.getElementById('shareInviteLink'),
+      physicalReminderBlock: document.getElementById('physicalReminderBlock'),
+      shippingStreet: document.getElementById('shippingStreet'),
+      shippingCity: document.getElementById('shippingCity'),
+      shippingPostalCode: document.getElementById('shippingPostalCode'),
+      paymentConfirmed: document.getElementById('paymentConfirmed'),
+      shippingAddressError: document.getElementById('shippingAddressError'),
+      paymentConfirmedError: document.getElementById('paymentConfirmedError'),
+      errorBanner: document.getElementById('errorBanner'),
+      errorBannerText: document.getElementById('errorBannerText'),
+      retryButton: document.getElementById('retryButton'),
+      agreementKeys: document.getElementById('agreementKeys'),
+      agreementParking: document.getElementById('agreementParking'),
+      agreementHygiene: document.getElementById('agreementHygiene'),
+      agreementDamage: document.getElementById('agreementDamage'),
+      agreementDocuments: document.getElementById('agreementDocuments'),
+    };
+
+    function saveDraft() {
+      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state.draft));
+    }
+
+    function loadDraft() {
+      const raw = window.sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        const parsed = JSON.parse(raw);
+        state.draft = { ...state.draft, ...parsed };
+      } catch (err) {
+        window.sessionStorage.removeItem(STORAGE_KEY);
+      }
+    }
+
+    function clearErrors() {
+      els.groupNameError.textContent = '';
+      els.groupPhotoError.textContent = '';
+      els.pricePerKilometerError.textContent = '';
+      els.reminderTypeError.textContent = '';
+      els.shippingAddressError.textContent = '';
+      els.paymentConfirmedError.textContent = '';
+    }
+
+    function showBanner(message) {
+      els.errorBanner.classList.remove('hidden');
+      els.errorBannerText.textContent = message;
+    }
+
+    function hideBanner() {
+      els.errorBanner.classList.add('hidden');
+      els.errorBannerText.textContent = '';
+    }
+
+    function renderStepIndicators() {
+      els.stepIndicators.innerHTML = '';
+      STEPS.forEach((name, index) => {
+        const li = document.createElement('li');
+        li.className = `rounded-md border px-2 py-2 text-center ${index === state.step ? 'step-dot active' : 'border-slate-700 text-slate-400'}`;
+        li.textContent = `${index + 1}. ${name}`;
+        els.stepIndicators.appendChild(li);
+      });
+    }
+
+    function renderReminderOptions() {
+      els.reminderTypeOptions.innerHTML = '';
+      state.reminderTypes.forEach((option) => {
+        const selected = state.draft.reminderType === option.name;
+        const wrapper = document.createElement('label');
+        wrapper.className = `block cursor-pointer rounded-lg border p-3 ${selected ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 bg-slate-950'}`;
+        wrapper.innerHTML = `
+          <input type="radio" name="reminderType" value="${option.name}" class="mr-2" ${selected ? 'checked' : ''}>
+          <span class="font-medium">${option.name}</span>
+          <p class="mt-1 text-sm text-slate-300">${option.description || ''}</p>
+        `;
+        wrapper.querySelector('input').addEventListener('change', () => {
+          state.draft.reminderType = option.name;
+          saveDraft();
+          renderReminderOptions();
+          renderPhysicalBlock();
+        });
+        els.reminderTypeOptions.appendChild(wrapper);
+      });
+    }
+
+    function renderFixedCosts() {
+      els.fixedCostsList.innerHTML = '';
+      if (!state.draft.fixedCosts.length) {
+        const empty = document.createElement('p');
+        empty.className = 'text-sm text-slate-400';
+        empty.textContent = 'No fixed costs added yet.';
+        els.fixedCostsList.appendChild(empty);
+        return;
+      }
+
+      state.draft.fixedCosts.forEach((row, index) => {
+        const div = document.createElement('div');
+        div.className = 'grid gap-2 rounded-lg border border-slate-700 p-3 md:grid-cols-12';
+        div.innerHTML = `
+          <input data-kind="type" data-index="${index}" type="text" value="${row.type || ''}" class="rounded-md border border-slate-700 bg-slate-950 px-2 py-2 md:col-span-4" placeholder="Type">
+          <input data-kind="amount" data-index="${index}" type="number" min="0" step="0.01" value="${row.amount || ''}" class="rounded-md border border-slate-700 bg-slate-950 px-2 py-2 md:col-span-3" placeholder="Amount">
+          <input data-kind="description" data-index="${index}" type="text" value="${row.description || ''}" class="rounded-md border border-slate-700 bg-slate-950 px-2 py-2 md:col-span-4" placeholder="Description">
+          <button type="button" data-remove="${index}" class="rounded-md border border-red-500 px-2 py-2 text-red-300 md:col-span-1">X</button>
+        `;
+        els.fixedCostsList.appendChild(div);
+      });
+
+      els.fixedCostsList.querySelectorAll('[data-kind]').forEach((input) => {
+        input.addEventListener('input', (event) => {
+          const index = Number(event.target.dataset.index);
+          const kind = event.target.dataset.kind;
+          state.draft.fixedCosts[index][kind] = event.target.value;
+          saveDraft();
+        });
+      });
+
+      els.fixedCostsList.querySelectorAll('[data-remove]').forEach((button) => {
+        button.addEventListener('click', (event) => {
+          const index = Number(event.target.dataset.remove);
+          state.draft.fixedCosts.splice(index, 1);
+          saveDraft();
+          renderFixedCosts();
+        });
+      });
+    }
+
+    function renderPhysicalBlock() {
+      const selected = state.reminderTypes.find((r) => r.name === state.draft.reminderType);
+      const isPhysical = Boolean(selected && selected.is_physical);
+      if (isPhysical) {
+        els.physicalReminderBlock.classList.remove('hidden');
+      } else {
+        els.physicalReminderBlock.classList.add('hidden');
+        state.draft.shippingAddress = { street: '', city: '', postalCode: '' };
+        state.draft.paymentConfirmed = false;
+      }
+      saveDraft();
+    }
+
+    function renderCurrentStep() {
+      els.panes.forEach((pane, index) => pane.classList.toggle('hidden', index !== state.step));
+      renderStepIndicators();
+      els.backButton.disabled = state.step === 0;
+      els.nextButton.textContent = state.step === 5 ? 'Create group' : 'Next';
+      if (state.step === 5 && !state.inviteLink) {
+        fetchInvitePreview();
+      }
+    }
+
+    function hydrateForm() {
+      els.groupName.value = state.draft.groupName;
+      els.licensePlate.value = state.draft.licensePlate || '';
+      els.pricePerKilometer.value = state.draft.pricePerKilometer;
+      els.priceDisplay.textContent = Number(state.draft.pricePerKilometer).toFixed(2);
+
+      els.agreementKeys.value = state.draft.internalAgreements.keys || '';
+      els.agreementParking.value = state.draft.internalAgreements.parking || '';
+      els.agreementHygiene.value = state.draft.internalAgreements.hygiene || '';
+      els.agreementDamage.value = state.draft.internalAgreements.damage || '';
+      els.agreementDocuments.value = state.draft.internalAgreements.documents || '';
+
+      els.shippingStreet.value = state.draft.shippingAddress.street || '';
+      els.shippingCity.value = state.draft.shippingAddress.city || '';
+      els.shippingPostalCode.value = state.draft.shippingAddress.postalCode || '';
+      els.paymentConfirmed.checked = Boolean(state.draft.paymentConfirmed);
+
+      renderReminderOptions();
+      renderFixedCosts();
+      renderPhysicalBlock();
+      renderCurrentStep();
+    }
+
+    function validateStep(step) {
+      clearErrors();
+      let ok = true;
+
+      if (step === 0) {
+        if (!state.draft.groupName.trim()) {
+          els.groupNameError.textContent = 'Group name is required.';
+          ok = false;
+        }
+        if (state.groupPhotoFile && !String(state.groupPhotoFile.type || '').startsWith('image/')) {
+          els.groupPhotoError.textContent = 'Only image uploads are allowed.';
+          ok = false;
+        }
+      }
+
+      if (step === 1) {
+        const value = Number(state.draft.pricePerKilometer);
+        if (!Number.isFinite(value) || value <= 0) {
+          els.pricePerKilometerError.textContent = 'Price per kilometer must be positive.';
+          ok = false;
+        }
+      }
+
+      if (step === 2 && !state.draft.reminderType) {
+        els.reminderTypeError.textContent = 'Select a reminder type.';
+        ok = false;
+      }
+
+      if (step === 5) {
+        const selected = state.reminderTypes.find((r) => r.name === state.draft.reminderType);
+        const isPhysical = Boolean(selected && selected.is_physical);
+        if (isPhysical) {
+          const address = state.draft.shippingAddress;
+          if (!address.street || !address.city || !address.postalCode) {
+            els.shippingAddressError.textContent = 'Shipping street, city, and postal code are required.';
+            ok = false;
+          }
+          if (!state.draft.paymentConfirmed) {
+            els.paymentConfirmedError.textContent = 'Payment confirmation is required.';
+            ok = false;
+          }
+        }
+      }
+
+      return ok;
+    }
+
+    async function fetchJson(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: {
+          'Authorization': `Bearer ${state.token}`,
+          'Accept': 'application/json',
+          ...(options.headers || {}),
+        },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const err = new Error(payload.error || 'Request failed');
+        err.payload = payload;
+        throw err;
+      }
+      return payload;
+    }
+
+    async function fetchInvitePreview() {
+      try {
+        const payload = await fetchJson('/api/groups/invite-preview');
+        state.inviteLink = payload.inviteLink || '';
+        els.inviteLinkBox.textContent = state.inviteLink || 'Unable to generate invite link right now.';
+      } catch (error) {
+        els.inviteLinkBox.textContent = 'Unable to generate invite link right now. You can still submit.';
+      }
+    }
+
+    function buildPayload() {
+      return {
+        idempotencyKey: state.draft.idempotencyKey,
+        inviteLink: state.inviteLink || '',
+        groupName: state.draft.groupName.trim(),
+        licensePlate: (state.draft.licensePlate || '').trim(),
+        pricePerKilometer: Number(state.draft.pricePerKilometer),
+        reminderType: state.draft.reminderType,
+        internalAgreements: {
+          keys: state.draft.internalAgreements.keys || '',
+          parking: state.draft.internalAgreements.parking || '',
+          hygiene: state.draft.internalAgreements.hygiene || '',
+          damage: state.draft.internalAgreements.damage || '',
+          documents: state.draft.internalAgreements.documents || '',
+        },
+        fixedCosts: state.draft.fixedCosts
+          .filter((c) => c.type && c.amount !== '')
+          .map((c) => ({ type: c.type, amount: Number(c.amount), description: c.description || '' })),
+        shippingAddress: {
+          street: state.draft.shippingAddress.street || '',
+          city: state.draft.shippingAddress.city || '',
+          postalCode: state.draft.shippingAddress.postalCode || '',
+        },
+        paymentConfirmed: Boolean(state.draft.paymentConfirmed),
+      };
+    }
+
+    async function uploadGroupPhoto(groupId) {
+      if (!state.groupPhotoFile) return;
+      const formData = new FormData();
+      formData.append('groupPhoto', state.groupPhotoFile);
+
+      await fetch(`/api/groups/${groupId}/photo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${state.token}`,
+        },
+        body: formData,
+      });
+    }
+
+    async function submitGroup() {
+      if (state.submitting) return;
+      hideBanner();
+
+      if (!validateStep(5)) return;
+
+      state.submitting = true;
+      els.nextButton.disabled = true;
+      els.nextButton.textContent = 'Creating...';
+
+      const payload = buildPayload();
+      state.lastPayload = payload;
+
+      try {
+        const response = await fetchJson('/api/groups', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Idempotency-Key': state.draft.idempotencyKey,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const groupId = response.group && response.group.id;
+        if (groupId) {
+          await uploadGroupPhoto(groupId);
+        }
+
+        window.sessionStorage.removeItem(STORAGE_KEY);
+        window.location.href = '/dashboard';
+      } catch (error) {
+        const fieldErrors = (error.payload && error.payload.fieldErrors) || {};
+        if (fieldErrors.groupName) els.groupNameError.textContent = fieldErrors.groupName;
+        if (fieldErrors.groupPhoto) els.groupPhotoError.textContent = fieldErrors.groupPhoto;
+        if (fieldErrors.pricePerKilometer) els.pricePerKilometerError.textContent = fieldErrors.pricePerKilometer;
+        if (fieldErrors.reminderType) els.reminderTypeError.textContent = fieldErrors.reminderType;
+        if (fieldErrors.shippingAddress) els.shippingAddressError.textContent = fieldErrors.shippingAddress;
+        if (fieldErrors.paymentConfirmed) els.paymentConfirmedError.textContent = fieldErrors.paymentConfirmed;
+
+        const message = error.message || 'We could not create the group. Please retry.';
+        showBanner(message);
+      } finally {
+        state.submitting = false;
+        els.nextButton.disabled = false;
+        els.nextButton.textContent = 'Create group';
+      }
+    }
+
+    function initEvents() {
+      els.groupName.addEventListener('input', () => {
+        state.draft.groupName = els.groupName.value;
+        if (state.draft.groupName.trim()) els.groupNameError.textContent = '';
+        saveDraft();
+      });
+
+      els.licensePlate.addEventListener('input', () => {
+        state.draft.licensePlate = els.licensePlate.value;
+        saveDraft();
+      });
+
+      els.groupPhoto.addEventListener('change', () => {
+        state.groupPhotoFile = els.groupPhoto.files[0] || null;
+        if (state.groupPhotoFile && !String(state.groupPhotoFile.type || '').startsWith('image/')) {
+          els.groupPhotoError.textContent = 'Only image uploads are allowed.';
+        } else {
+          els.groupPhotoError.textContent = '';
+        }
+      });
+
+      els.pricePerKilometer.addEventListener('input', () => {
+        state.draft.pricePerKilometer = Number(els.pricePerKilometer.value);
+        els.priceDisplay.textContent = Number(state.draft.pricePerKilometer).toFixed(2);
+        if (state.draft.pricePerKilometer > 0) els.pricePerKilometerError.textContent = '';
+        saveDraft();
+      });
+
+      [
+        ['agreementKeys', 'keys'],
+        ['agreementParking', 'parking'],
+        ['agreementHygiene', 'hygiene'],
+        ['agreementDamage', 'damage'],
+        ['agreementDocuments', 'documents'],
+      ].forEach(([elementId, key]) => {
+        els[elementId].addEventListener('input', () => {
+          state.draft.internalAgreements[key] = els[elementId].value;
+          saveDraft();
+        });
+      });
+
+      els.addFixedCost.addEventListener('click', () => {
+        state.draft.fixedCosts.push({ type: '', amount: '', description: '' });
+        saveDraft();
+        renderFixedCosts();
+      });
+
+      els.shippingStreet.addEventListener('input', () => {
+        state.draft.shippingAddress.street = els.shippingStreet.value;
+        els.shippingAddressError.textContent = '';
+        saveDraft();
+      });
+      els.shippingCity.addEventListener('input', () => {
+        state.draft.shippingAddress.city = els.shippingCity.value;
+        els.shippingAddressError.textContent = '';
+        saveDraft();
+      });
+      els.shippingPostalCode.addEventListener('input', () => {
+        state.draft.shippingAddress.postalCode = els.shippingPostalCode.value;
+        els.shippingAddressError.textContent = '';
+        saveDraft();
+      });
+      els.paymentConfirmed.addEventListener('change', () => {
+        state.draft.paymentConfirmed = els.paymentConfirmed.checked;
+        els.paymentConfirmedError.textContent = '';
+        saveDraft();
+      });
+
+      els.copyInviteLink.addEventListener('click', async () => {
+        if (!state.inviteLink) return;
+        await navigator.clipboard.writeText(state.inviteLink);
+      });
+
+      els.shareInviteLink.addEventListener('click', async () => {
+        if (!state.inviteLink) return;
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: 'Join my SHARIT group', url: state.inviteLink });
+            return;
+          } catch (err) {
+            // Fallback to clipboard below.
+          }
+        }
+        await navigator.clipboard.writeText(state.inviteLink);
+      });
+
+      els.backButton.addEventListener('click', () => {
+        if (state.step > 0) {
+          state.step -= 1;
+          renderCurrentStep();
+        }
+      });
+
+      els.nextButton.addEventListener('click', () => {
+        if (!validateStep(state.step)) return;
+        if (state.step < 5) {
+          state.step += 1;
+          renderCurrentStep();
+          return;
+        }
+        submitGroup();
+      });
+
+      els.retryButton.addEventListener('click', () => {
+        if (state.lastPayload) {
+          submitGroup();
+        }
+      });
+    }
+
+    async function init() {
+      if (!state.token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      loadDraft();
+      initEvents();
+      hydrateForm();
+
+      try {
+        const profilePayload = await fetchJson('/api/get_user_profile');
+        const profile = profilePayload.user_profile || {};
+        if (!profile.onboarding_completed) {
+          window.location.href = '/onboarding';
+          return;
+        }
+      } catch (error) {
+        window.location.href = '/login';
+        return;
+      }
+
+      try {
+        const reminderPayload = await fetchJson('/api/reminder-types');
+        state.reminderTypes = reminderPayload.reminder_types || [];
+        if (!state.draft.reminderType && state.reminderTypes.length > 0) {
+          state.draft.reminderType = state.reminderTypes[0].name;
+          saveDraft();
+        }
+        renderReminderOptions();
+        renderPhysicalBlock();
+      } catch (error) {
+        showBanner('Could not load reminder types. Please retry.');
+      }
+    }
+
+    init();
+  </script>
+{% endblock %}

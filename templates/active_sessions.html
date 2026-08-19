@@ -1,23 +1,10 @@
-<!DOCTYPE html>
-<html lang="en" class="h-full">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Active Sessions - SHARIT</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        accent: '#22d3ee'
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="min-h-full bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-slate-100">
+{% extends "base.html" %}
+
+{% block title %}Active Sessions - SHARIT{% endblock %}
+{% block html_class %}h-full{% endblock %}
+{% block body_class %}min-h-full bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-slate-100{% endblock %}
+
+{% block content %}
     <div class="min-h-screen p-4 md:p-8">
         <!-- Header -->
         <header class="mb-8">
@@ -179,5 +166,4 @@
             </section>
         </main>
     </div>
-</body>
-</html>
+{% endblock %}

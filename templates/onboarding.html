@@ -1,259 +1,118 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to SHARIT - Get Started</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        accent: '#22d3ee'
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100">
-    <!-- Hero Section -->
-    <div class="px-6 pt-10 pb-6 md:px-10 md:pt-16 md:pb-10">
-        <div class="max-w-4xl mx-auto text-center">
-            <h1 class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">
-                Welcome to SHARIT
-            </h1>
-            <p class="text-xl text-slate-300 max-w-2xl mx-auto">
-                Let's get you set up to start sharing expenses and managing groups effortlessly.
-            </p>
-        </div>
+{% extends "base.html" %}
+
+{% block title %}Welkom bij SHARIT{% endblock %}
+{% block body_class %}min-h-screen bg-shell text-slate-100 flex items-center justify-center p-4{% endblock %}
+{% block head_extra %}
+<style>
+    .bg-shell { background: radial-gradient(circle at top right, #0f172a, #020617 55%); }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <main class="w-full max-w-md">
+    <section id="screen1" class="rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
+      <h1 class="mb-4 text-2xl font-bold">Hoe werkt SHARIT?</h1>
+      <p class="mb-8 text-slate-300">SHARIT helpt je kilometers en kosten van jullie gezamenlijke deelauto eerlijk te verdelen.</p>
+      <button id="nextButton" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Volgende</button>
+    </section>
+
+    <section id="screen2" class="hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
+      <h1 class="mb-4 text-2xl font-bold">Vorm een groep</h1>
+      <p class="mb-8 text-slate-300">Maak een nieuwe groep aan, of neem deel via een uitnodigingslink. Iedereen die meerijdt of meebetaalt, meldt zich aan bij dezelfde groep.</p>
+      <button id="startButton" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Aan de slag</button>
+    </section>
+
+    <div id="loadingState" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
+      <div class="rounded-xl bg-slate-900 p-6 text-center">
+        <div class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-slate-400 border-t-transparent"></div>
+        <p class="text-slate-300">Momentje...</p>
+      </div>
     </div>
+  </main>
 
-    <!-- Main Content -->
-    <div class="px-6 pb-10 md:px-10">
-        <div class="max-w-6xl mx-auto">
-            <!-- Avatar Upload Section -->
-            <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-lg p-6 md:p-8 mb-8">
-                <div class="text-center mb-6">
-                    <h2 class="text-2xl font-bold mb-2">Add Your Photo</h2>
-                    <p class="text-slate-400">Help your friends recognize you in groups (optional)</p>
-                </div>
-                
-                <form class="max-w-md mx-auto">
-                    <input type="hidden" name="csrf_token" value="CSRF_TOKEN_PLACEHOLDER">
-                    
-                    <!-- Avatar Preview -->
-                    <div class="flex justify-center mb-6">
-                        <div class="relative">
-                            <div id="avatar-preview" class="w-24 h-24 md:w-32 md:h-32 bg-slate-700 rounded-full flex items-center justify-center text-2xl md:text-3xl font-bold text-slate-300 border-4 border-slate-600">
-                                JS
-                            </div>
-                            <label for="avatar-upload" class="absolute -bottom-2 -right-2 bg-accent hover:bg-cyan-400 text-slate-900 w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 hover:-translate-y-0.5 shadow-lg">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                </svg>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <input 
-                        type="file" 
-                        id="avatar-upload" 
-                        name="avatar" 
-                        accept="image/jpeg,image/png,image/webp" 
-                        class="hidden"
-                        aria-label="Upload profile photo"
-                    >
-                    
-                    <p class="text-sm text-slate-400 text-center mb-6">
-                        JPG, PNG, or WebP • Max 5MB
-                    </p>
-                </form>
-            </div>
+  <script>
+    function getInviteTokenContext() {
+      const params = new URLSearchParams(window.location.search);
+      return (params.get('invite') || window.sessionStorage.getItem('pending_invite_token') || '').trim();
+    }
 
-            <!-- Platform Overview -->
-            <div class="grid md:grid-cols-3 gap-6 mb-10">
-                <!-- Expense Tracking -->
-                <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 hover:-translate-y-0.5 transition-all duration-200">
-                    <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 0h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-bold mb-2">Track Expenses</h3>
-                    <p class="text-slate-400 text-sm">
-                        Add receipts, split bills, and keep track of who owes what in real-time.
-                    </p>
-                </div>
+    const inviteToken = getInviteTokenContext();
 
-                <!-- Group Management -->
-                <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 hover:-translate-y-0.5 transition-all duration-200">
-                    <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-bold mb-2">Manage Groups</h3>
-                    <p class="text-slate-400 text-sm">
-                        Create groups for trips, roommates, or any shared expenses with friends.
-                    </p>
-                </div>
+    function getSessionToken() {
+      return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
+    }
 
-                <!-- Settlement -->
-                <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 hover:-translate-y-0.5 transition-all duration-200">
-                    <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-bold mb-2">Settle Up</h3>
-                    <p class="text-slate-400 text-sm">
-                        Get smart recommendations on who should pay whom to settle all debts efficiently.
-                    </p>
-                </div>
-            </div>
+    async function loadCurrentUser() {
+      const token = getSessionToken();
+      if (!token) {
+        window.location.href = '/login';
+        return null;
+      }
 
-            <!-- Action Buttons -->
-            <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-lg p-6 md:p-8">
-                <div class="text-center mb-6">
-                    <h2 class="text-2xl font-bold mb-2">Ready to Start?</h2>
-                    <p class="text-slate-400">You can always update your profile later in settings.</p>
-                </div>
-                
-                <div class="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-                    <button
-                        type="button"
-                        onclick="completeOnboarding()"
-                        class="bg-accent hover:bg-cyan-400 text-slate-900 font-semibold px-8 py-3 rounded-xl transition-all duration-200 hover:-translate-y-0.5 shadow-lg focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-800"
-                        aria-label="Complete onboarding and go to dashboard"
-                    >
-                        Get Started
-                    </button>
-                    
-                    <button 
-                        type="button"
-                        onclick="completeOnboarding()"
-                        class="border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-slate-200 font-semibold px-8 py-3 rounded-xl transition-all duration-200 hover:-translate-y-0.5 text-center focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-800"
-                        aria-label="Skip onboarding and go to dashboard"
-                    >
-                        Skip for Now
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+      const response = await fetch('/api/get_user_profile', {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      });
 
-    <!-- Loading State (Hidden by default) -->
-    <div id="loading-state" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50">
-        <div class="bg-slate-800 rounded-xl p-6 text-center">
-            <div class="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p class="text-slate-300">Setting up your account...</p>
-        </div>
-    </div>
+      if (!response.ok) {
+        window.localStorage.removeItem('session_token');
+        window.sessionStorage.removeItem('session_token');
+        window.location.href = '/login';
+        return null;
+      }
 
-    <script>
-        function getSessionToken() {
-            return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
+      const payload = await response.json();
+      return payload.user_profile;
+    }
+
+    async function completeOnboarding() {
+      const token = getSessionToken();
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      document.getElementById('loadingState').classList.remove('hidden');
+
+      const response = await fetch('/api/complete_onboarding', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        document.getElementById('loadingState').classList.add('hidden');
+        alert('Er ging iets mis. Probeer het opnieuw.');
+        return;
+      }
+
+      if (inviteToken) {
+        window.sessionStorage.removeItem('pending_invite_token');
+        window.location.href = `/invite/${encodeURIComponent(inviteToken)}`;
+        return;
+      }
+      window.location.href = '/dashboard';
+    }
+
+    document.getElementById('nextButton').addEventListener('click', () => {
+      document.getElementById('screen1').classList.add('hidden');
+      document.getElementById('screen2').classList.remove('hidden');
+    });
+    document.getElementById('startButton').addEventListener('click', completeOnboarding);
+
+    loadCurrentUser().then((userProfile) => {
+      if (!userProfile) return;
+
+      if (userProfile.onboarding_completed) {
+        if (inviteToken) {
+          window.location.href = `/invite/${encodeURIComponent(inviteToken)}`;
+          return;
         }
-
-        async function loadCurrentUser() {
-            const token = getSessionToken();
-            if (!token) {
-                window.location.href = '/login';
-                return null;
-            }
-
-            const response = await fetch('/api/get_user_profile', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                window.localStorage.removeItem('session_token');
-                window.sessionStorage.removeItem('session_token');
-                window.location.href = '/login';
-                return null;
-            }
-
-            const payload = await response.json();
-            return payload.user_profile;
-        }
-
-        async function completeOnboarding() {
-            const token = getSessionToken();
-            if (!token) {
-                window.location.href = '/login';
-                return;
-            }
-
-            document.getElementById('loading-state').classList.remove('hidden');
-
-            const response = await fetch('/api/complete_onboarding', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({})
-            });
-
-            if (!response.ok) {
-                document.getElementById('loading-state').classList.add('hidden');
-                const url = new URL(window.location.href);
-                url.searchParams.set('error', '1');
-                window.location.href = url.toString();
-                return;
-            }
-
-            window.location.href = '/dashboard';
-        }
-
-        // Avatar upload preview
-        document.getElementById('avatar-upload').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            const preview = document.getElementById('avatar-preview');
-            
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover rounded-full" alt="Avatar preview">`;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // Form submission with loading state
-        document.querySelector('form').addEventListener('submit', function(event) {
-            event.preventDefault();
-            completeOnboarding();
-        });
-
-        // Handle errors (would be populated by backend)
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('error')) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-6 text-center';
-            errorDiv.textContent = 'Upload failed. Please try again with a smaller image.';
-            document.querySelector('form').prepend(errorDiv);
-        }
-
-        loadCurrentUser().then(function(userProfile) {
-            if (!userProfile) {
-                return;
-            }
-
-            if (userProfile.onboarding_completed) {
-                window.location.href = '/dashboard';
-                return;
-            }
-
-            const initials = `${(userProfile.first_name || 'S')[0] || 'S'}${(userProfile.last_name || 'H')[0] || 'H'}`;
-            document.getElementById('avatar-preview').textContent = initials.toUpperCase();
-        });
-    </script>
-</body>
-</html>
+        window.location.href = '/dashboard';
+      }
+    });
+  </script>
+{% endblock %}

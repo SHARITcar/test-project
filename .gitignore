@@ -8,4 +8,7 @@ routes/__pycache__/
 tests/__pycache__/
 *.pyc
 *.sql
+!db/migrations/*.sql
 CLAUDE.md
+node_modules/
+.claude/

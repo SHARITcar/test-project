@@ -1,237 +1,993 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - SHARIT</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #1f2937 0%, #111827 50%, #0f172a 100%);
-        }
-    </style>
-</head>
-<body class="min-h-screen gradient-bg text-slate-100 font-sans antialiased">
-    <!-- Header with user info and account menu -->
-    <header class="sticky top-0 backdrop-blur-sm bg-slate-900/80 border-b border-slate-700/50 z-50">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center space-x-4">
-                    <h1 class="text-xl font-bold text-slate-100">SHARIT</h1>
-                </div>
-                
-                <!-- User account menu -->
-                <div class="relative">
-                    <button class="flex items-center space-x-3 hover:bg-slate-800/50 rounded-lg px-3 py-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400" 
-                            aria-label="Account menu" onclick="toggleAccountMenu()">
-                        <!-- User avatar (initials fallback) -->
-                        <div id="accountAvatar" class="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-slate-900 font-semibold text-sm">
-                            JD
-                        </div>
-                        <span id="accountName" class="hidden sm:block text-sm font-medium">John</span>
-                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                    </button>
-                    
-                    <!-- Dropdown menu (hidden by default) -->
-                    <div class="absolute right-0 mt-2 w-48 rounded-xl bg-slate-800 shadow-lg border border-slate-700 py-2 hidden" id="accountMenu">
-                        <a href="/profile" class="block px-4 py-2 text-sm hover:bg-slate-700 transition-colors duration-200">
-                            Profile Settings
-                        </a>
-                        <hr class="border-slate-700 my-1">
-                        <button type="button" onclick="logoutUser()" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-700 transition-colors duration-200 text-red-300">
-                                Sign Out
-                        </button>
-                    </div>
-                </div>
-            </div>
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SHARIT{% endblock %}
+{% block body_class %}min-h-screen bg-shell text-slate-100{% endblock %}
+{% block head_extra %}
+<style>
+    .bg-shell { background: radial-gradient(circle at top right, #0f172a, #020617 55%); }
+    .cue-pulse { animation: cuePulse 1.5s ease-in-out infinite; }
+    @keyframes cuePulse {
+      0%, 100% { transform: scale(1); opacity: 0.65; }
+      50% { transform: scale(1.07); opacity: 1; }
+    }
+    .tab-btn.active { background: #1e293b; color: #f1f5f9; }
+    .pill-btn.active { background: #f1f5f9; color: #0f172a; }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <header class="sticky top-0 z-50 border-b border-slate-800/90 bg-slate-950/80 backdrop-blur">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+      <div class="flex items-center gap-3">
+        <button id="menuToggle" class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 hover:border-cyan-400" aria-label="Groups menu">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+        <h1 class="text-xl font-semibold">SHARIT</h1>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div id="accountAvatar" class="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500 font-semibold text-slate-900">U</div>
+        <span id="accountName" class="hidden text-sm text-slate-300 sm:inline">User</span>
+        <button id="logoutButton" class="rounded-md border border-slate-700 px-3 py-2 text-xs text-slate-200 hover:bg-slate-800">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mx-auto flex max-w-6xl">
+    <aside id="groupsDrawer" class="fixed inset-y-0 left-0 z-40 w-80 -translate-x-full border-r border-slate-800 bg-slate-950/95 p-4 transition-transform duration-200 md:relative md:translate-x-0">
+      <div class="mb-5 flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Your groups</h2>
+        <button id="addGroupButton" class="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500 text-slate-900 hover:bg-cyan-400" title="Add group">+</button>
+      </div>
+      <div id="emptyDrawerCue" class="mb-4 hidden rounded-lg border border-cyan-400/50 bg-cyan-500/10 p-3 text-sm text-cyan-200">
+        No groups yet. Click + to create one.
+      </div>
+      <ul id="groupsList" class="space-y-2"></ul>
+    </aside>
+
+    <main class="w-full px-4 py-10 pb-28 md:ml-0">
+      <section class="mx-auto max-w-4xl text-center">
+        <h2 id="welcomeTitle" class="mb-3 text-3xl font-bold">Welcome</h2>
+        <p class="text-slate-300">Track shared car usage and keep costs fair across your group.</p>
+      </section>
+
+      <div id="insuranceBanner" class="mx-auto mt-6 hidden max-w-4xl items-start justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+        <p>Niet de pineut zijn als iemand anders schade rijdt? Er zijn verzekeringen voor gedeeld autogebruik. <button type="button" id="insuranceMoreInfo" class="font-semibold underline underline-offset-2 hover:text-white">Meer info</button></p>
+        <button type="button" id="dismissInsuranceBanner" class="shrink-0 text-amber-200 hover:text-white">&times;</button>
+      </div>
+
+      <section id="dashboardEmptyState" class="mx-auto mt-10 max-w-2xl rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center">
+        <h3 class="mb-2 text-xl font-semibold">No car-sharing groups yet</h3>
+        <p class="text-slate-400">Open the menu to create or join a group.</p>
+        <div id="menuCue" class="mt-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/50 bg-cyan-500/10 px-4 py-2 text-sm text-cyan-200 cue-pulse">
+          <span>Start with the menu</span>
+          <span>[menu]</span>
         </div>
-    </header>
+      </section>
 
-    <!-- Main content -->
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Welcome section -->
-        <div class="mb-10">
-            <div class="text-center max-w-2xl mx-auto">
-                <h2 class="text-3xl font-bold text-slate-100 mb-4">Welcome back, John!</h2>
-                <p class="text-lg text-slate-300">Ready to track and split expenses with your groups?</p>
-            </div>
-        </div>
+      <section id="dashboardErrorState" class="mx-auto mt-10 hidden max-w-2xl rounded-xl border border-red-400/40 bg-red-500/10 p-5 text-red-200">
+        <p id="dashboardErrorMessage">Unable to load dashboard.</p>
+        <button id="retryDashboard" class="mt-3 rounded-md bg-red-500 px-3 py-2 text-white">Retry</button>
+      </section>
 
-        <!-- Empty state with action cards -->
-        <div class="grid gap-6 md:gap-8">
-            <!-- Empty state message -->
-            <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 text-center">
-                <div class="max-w-md mx-auto">
-                    <div class="w-16 h-16 mx-auto mb-6 rounded-full bg-slate-700/50 flex items-center justify-center">
-                        <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold text-slate-100 mb-3">No groups yet</h3>
-                    <p class="text-slate-400 mb-6">Create your first group or join an existing one to start tracking shared expenses.</p>
-                </div>
-            </div>
-
-            <!-- Action cards -->
-            <div class="grid md:grid-cols-2 gap-6">
-                <!-- Create group card -->
-                <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:border-cyan-400/50 transition-all duration-200 hover:-translate-y-0.5 shadow-lg">
-                    <div class="flex items-start space-x-4">
-                        <div class="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-lg font-semibold text-slate-100 mb-2">Create a Group</h3>
-                            <p class="text-slate-400 text-sm mb-4">Start a new group for your household, trip, or shared project. Invite others and begin tracking expenses together.</p>
-                            <button class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold py-2.5 px-4 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400">
-                                Create Group
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Join group card -->
-                <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:border-slate-600 transition-all duration-200 hover:-translate-y-0.5 shadow-lg">
-                    <div class="flex items-start space-x-4">
-                        <div class="w-12 h-12 rounded-xl bg-slate-700/50 flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6"></path>
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-lg font-semibold text-slate-100 mb-2">Join a Group</h3>
-                            <p class="text-slate-400 text-sm mb-4">Got an invite link or code? Join an existing group and start collaborating on expense tracking right away.</p>
-                            <button class="w-full bg-slate-700 hover:bg-slate-600 text-slate-100 font-semibold py-2.5 px-4 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-500 border border-slate-600">
-                                Join Group
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <!-- ACTIVE GROUP WORKSPACE -->
+      <div id="workspaceSection" class="mx-auto mt-8 hidden max-w-4xl">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 id="activeGroupName" class="text-xl font-semibold"></h2>
+          <a id="groupSettingsLink" href="#" class="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">Group settings</a>
         </div>
 
-        <!-- Loading state (hidden by default) -->
-        <div class="hidden" id="loadingState">
-            <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 text-center">
-                <div class="animate-spin w-8 h-8 mx-auto mb-4 border-2 border-cyan-400 border-t-transparent rounded-full"></div>
-                <p class="text-slate-400">Loading your groups...</p>
-            </div>
-        </div>
+        <section id="workspaceLoading" class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
+          <p class="text-slate-300">Loading...</p>
+        </section>
 
-        <!-- Error state (hidden by default) -->
-        <div class="hidden" id="errorState">
-            <div class="bg-red-900/20 backdrop-blur-sm rounded-2xl border border-red-700/50 p-8 text-center">
-                <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-red-900/50 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-red-100 mb-2">Unable to load dashboard</h3>
-                <p class="text-red-300 mb-4">There was a problem loading your groups. Please try refreshing the page.</p>
-                <button class="bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-400">
-                    Retry
-                </button>
+        <section id="workspaceError" class="hidden rounded-xl border border-red-400/40 bg-red-500/10 p-6 text-red-200">
+          <p id="workspaceErrorText">Unable to load this group right now.</p>
+          <button id="workspaceRetryButton" class="mt-4 rounded-md bg-red-500 px-3 py-2 text-white">Retry</button>
+        </section>
+
+        <div id="workspaceContent" class="hidden space-y-6">
+
+          <!-- TRIPS TAB -->
+          <div id="panel-trips" class="space-y-6">
+            <div id="tripsTip" class="hidden flex items-start justify-between gap-3 rounded-lg border border-cyan-400/30 bg-cyan-500/10 p-3 text-sm text-cyan-100">
+              <p>Voer bij elke rit de totale kilometerstand in — niet de dagstand. Aan het einde van de rit hoef je niets opnieuw in te vullen.</p>
+              <button type="button" data-dismiss-tip="trips_tip" class="shrink-0 text-cyan-200 hover:text-white">&times;</button>
             </div>
+
+            <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
+              <h2 class="mb-4 text-lg font-semibold">Add trip</h2>
+              <p id="tripMessage" class="mb-4 hidden rounded-lg border p-3 text-sm"></p>
+
+              <label class="mb-1 block text-sm text-slate-300" for="tripDate">Date</label>
+              <input id="tripDate" type="date" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+
+              <p class="mb-1 block text-sm text-slate-300">Participants</p>
+              <div id="participantPicker" class="mb-1 flex flex-wrap gap-2"></div>
+              <p id="participantsError" class="mb-3 text-sm text-red-300"></p>
+
+              <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label class="mb-1 block text-sm text-slate-300" for="odometerReading">
+                    Odometer reading <span id="odometerMinHint" class="text-slate-500"></span>
+                  </label>
+                  <input id="odometerReading" type="number" min="0" step="0.1" inputmode="decimal" placeholder="e.g. 198138" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-lg">
+                  <p id="odometerReadingError" class="mt-1 text-sm text-red-300"></p>
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm text-slate-300" for="tripPhoto">Odometer photo <span class="text-slate-500">optional</span></label>
+                  <input id="tripPhoto" type="file" accept="image/*" capture="environment" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm">
+                </div>
+              </div>
+
+              <label class="mb-1 block text-sm text-slate-300" for="tripNotes">Note <span class="text-slate-500">optional</span></label>
+              <textarea id="tripNotes" rows="1" placeholder="What was the trip for?" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
+
+              <button id="logTripButton" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">+ Add trip</button>
+            </section>
+
+            <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
+              <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-lg font-semibold">Trip history</h2>
+                <span id="tripsCount" class="text-sm text-slate-400"></span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                  <thead class="text-xs uppercase tracking-wide text-slate-400">
+                    <tr>
+                      <th class="pb-2 pr-4">Date</th>
+                      <th class="pb-2 pr-4">Participants</th>
+                      <th class="pb-2 pr-4">Odometer</th>
+                      <th class="pb-2">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tripsTableBody" class="divide-y divide-slate-800"></tbody>
+                </table>
+              </div>
+              <p id="tripsEmpty" class="hidden py-4 text-sm text-slate-400">No trips logged yet.</p>
+            </section>
+          </div>
+
+          <!-- COSTS TAB -->
+          <div id="panel-costs" class="hidden space-y-6">
+            <div id="costsTip" class="hidden flex items-start justify-between gap-3 rounded-lg border border-cyan-400/30 bg-cyan-500/10 p-3 text-sm text-cyan-100">
+              <p>Vaste kosten (zoals wegenbelasting) en variabele kosten (zoals tanken) kunnen op elk moment worden ingevoerd.</p>
+              <button type="button" data-dismiss-tip="costs_tip" class="shrink-0 text-cyan-200 hover:text-white">&times;</button>
+            </div>
+
+            <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
+              <h2 class="text-lg font-semibold">Add cost</h2>
+              <p class="mb-4 text-sm text-slate-400">A shared expense paid up front by one person.</p>
+              <p id="costMessage" class="mb-4 hidden rounded-lg border p-3 text-sm"></p>
+
+              <p class="mb-1 block text-sm text-slate-300">Category</p>
+              <div id="categoryPicker" class="mb-4 flex flex-wrap gap-2"></div>
+              <p id="categoryError" class="-mt-3 mb-3 text-sm text-red-300"></p>
+
+              <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div>
+                  <label class="mb-1 block text-sm text-slate-300" for="costPaidBy">Paid by</label>
+                  <select id="costPaidBy" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></select>
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm text-slate-300" for="costAmount">Amount <span class="text-slate-500">EUR</span></label>
+                  <input id="costAmount" type="number" min="0.01" step="0.01" placeholder="0.00" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+                  <p id="costAmountError" class="mt-1 text-sm text-red-300"></p>
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm text-slate-300" for="costDate">Date</label>
+                  <input id="costDate" type="date" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+                </div>
+              </div>
+
+              <label class="mb-1 block text-sm text-slate-300" for="costNotes">Note <span class="text-slate-500">optional</span></label>
+              <textarea id="costNotes" rows="1" placeholder="e.g. Full tank, monthly premium" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
+
+              <button id="logCostButton" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">+ Add cost</button>
+            </section>
+
+            <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
+              <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-lg font-semibold">Cost history</h2>
+                <span id="costsCount" class="text-sm text-slate-400"></span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                  <thead class="text-xs uppercase tracking-wide text-slate-400">
+                    <tr>
+                      <th class="pb-2 pr-4">Date</th>
+                      <th class="pb-2 pr-4">Category</th>
+                      <th class="pb-2 pr-4">Paid by</th>
+                      <th class="pb-2 pr-4">Amount</th>
+                      <th class="pb-2">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody id="costsTableBody" class="divide-y divide-slate-800"></tbody>
+                </table>
+              </div>
+              <p id="costsEmpty" class="hidden py-4 text-sm text-slate-400">No costs logged yet.</p>
+            </section>
+          </div>
+
+          <!-- DASHBOARD TAB -->
+          <div id="panel-dashboard" class="hidden space-y-6">
+            <div id="dashboardTip" class="hidden flex items-start justify-between gap-3 rounded-lg border border-cyan-400/30 bg-cyan-500/10 p-3 text-sm text-cyan-100">
+              <p>Hier zie je in één oogopslag wie wat verdiend of nog moet betalen.</p>
+              <button type="button" data-dismiss-tip="dashboard_tip" class="shrink-0 text-cyan-200 hover:text-white">&times;</button>
+            </div>
+
+            <section>
+              <div class="mb-3 flex items-center justify-between">
+                <h2 class="text-lg font-semibold">Balances</h2>
+                <span id="memberCount" class="text-sm text-slate-400"></span>
+              </div>
+              <div id="balancesGrid" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5"></div>
+            </section>
+
+            <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
+              <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-lg font-semibold">All activity</h2>
+                <span id="activityCount" class="text-sm text-slate-400"></span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                  <thead class="text-xs uppercase tracking-wide text-slate-400">
+                    <tr>
+                      <th class="pb-2 pr-4">Date</th>
+                      <th class="pb-2 pr-4">Type</th>
+                      <th class="pb-2 pr-4">Who</th>
+                      <th class="pb-2 pr-4">Details</th>
+                      <th class="pb-2 text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody id="activityTableBody" class="divide-y divide-slate-800"></tbody>
+                </table>
+              </div>
+              <p id="activityEmpty" class="hidden py-4 text-sm text-slate-400">No activity yet.</p>
+            </section>
+          </div>
+
         </div>
+      </div>
     </main>
+  </div>
 
-    <script>
-        function getSessionToken() {
-            return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
-        }
+  <!-- Floating bottom nav: switches tabs within the active group's workspace -->
+  <nav id="tabNav" class="hidden fixed bottom-4 left-1/2 z-40 -translate-x-1/2 gap-1 rounded-full border border-slate-800 bg-slate-900/95 p-1 shadow-lg shadow-black/40 backdrop-blur">
+    <button type="button" data-tab="trips" class="tab-btn rounded-full px-5 py-2 text-sm font-medium text-slate-300">Trips</button>
+    <button type="button" data-tab="costs" class="tab-btn rounded-full px-5 py-2 text-sm font-medium text-slate-300">Costs</button>
+    <button type="button" data-tab="dashboard" class="tab-btn rounded-full px-5 py-2 text-sm font-medium text-slate-300">Dashboard</button>
+  </nav>
 
-        function clearSessionToken() {
-            window.localStorage.removeItem('session_token');
-            window.sessionStorage.removeItem('session_token');
-        }
+  <div id="groupActionModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 p-4">
+    <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
+      <h3 class="mb-4 text-lg font-semibold">Add a group</h3>
+      <button id="goCreateGroup" class="mb-3 w-full rounded-lg border border-cyan-400/60 bg-cyan-500/20 px-4 py-3 text-left hover:bg-cyan-500/30">
+        Create a shared car group
+      </button>
+      <button id="joinGroup" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-left hover:bg-slate-700">
+        Join an existing group
+      </button>
+      <button id="closeModal" class="mt-4 w-full rounded-lg border border-slate-700 px-4 py-2 text-slate-300">Cancel</button>
+    </div>
+  </div>
 
-        async function logoutUser() {
-            const token = getSessionToken();
-            clearSessionToken();
+  <script>
+    const CATEGORIES = ['Insurance', 'Tax', 'Depreciation'];
+    const AVATAR_COLORS = ['bg-cyan-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-rose-500', 'bg-blue-500'];
 
-            if (token) {
-                try {
-                    await fetch('/api/logout_user', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json'
-                        }
-                    });
-                } catch (error) {
-                    console.error('Logout request failed', error);
-                }
-            }
+    function getSessionToken() {
+      return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
+    }
 
-            window.location.href = '/login';
-        }
+    function clearSessionToken() {
+      window.localStorage.removeItem('session_token');
+      window.sessionStorage.removeItem('session_token');
+    }
 
-        async function loadUserProfile() {
-            const token = getSessionToken();
-            if (!token) {
-                window.location.href = '/login';
-                return;
-            }
+    const state = {
+      token: getSessionToken(),
+      profile: null,
+      currentUserId: null,
+      groups: [],
+      activeGroupId: null,
+      drawerOpen: window.innerWidth >= 768,
+      seenTips: [],
 
-            try {
-                const response = await fetch('/api/get_user_profile', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
-                });
+      activeTab: 'trips',
+      members: [],
+      trips: [],
+      tripsLoaded: false,
+      costs: [],
+      costsLoaded: false,
+      balances: [],
+      activity: [],
+      dashboardLoaded: false,
+      selectedParticipantIds: new Set(),
+      selectedCategory: CATEGORIES[0],
+    };
 
-                if (!response.ok) {
-                    clearSessionToken();
-                    window.location.href = '/login';
-                    return;
-                }
+    const els = {
+      drawer: document.getElementById('groupsDrawer'),
+      menuToggle: document.getElementById('menuToggle'),
+      groupsList: document.getElementById('groupsList'),
+      emptyDrawerCue: document.getElementById('emptyDrawerCue'),
+      emptyState: document.getElementById('dashboardEmptyState'),
+      errorState: document.getElementById('dashboardErrorState'),
+      errorMessage: document.getElementById('dashboardErrorMessage'),
+      retryButton: document.getElementById('retryDashboard'),
+      accountName: document.getElementById('accountName'),
+      accountAvatar: document.getElementById('accountAvatar'),
+      welcomeTitle: document.getElementById('welcomeTitle'),
+      insuranceBanner: document.getElementById('insuranceBanner'),
+      dismissInsuranceBanner: document.getElementById('dismissInsuranceBanner'),
+      insuranceMoreInfo: document.getElementById('insuranceMoreInfo'),
+      addButton: document.getElementById('addGroupButton'),
+      logoutButton: document.getElementById('logoutButton'),
+      menuCue: document.getElementById('menuCue'),
+      modal: document.getElementById('groupActionModal'),
+      closeModal: document.getElementById('closeModal'),
+      goCreateGroup: document.getElementById('goCreateGroup'),
+      joinGroup: document.getElementById('joinGroup'),
 
-                const payload = await response.json();
-                const user = payload.user_profile || {};
-                const firstName = user.first_name || 'User';
-                const lastName = user.last_name || '';
-                const initials = `${(firstName[0] || 'U')}${(lastName[0] || '').toUpperCase()}`.trim();
+      workspaceSection: document.getElementById('workspaceSection'),
+      activeGroupName: document.getElementById('activeGroupName'),
+      groupSettingsLink: document.getElementById('groupSettingsLink'),
+      workspaceLoading: document.getElementById('workspaceLoading'),
+      workspaceError: document.getElementById('workspaceError'),
+      workspaceErrorText: document.getElementById('workspaceErrorText'),
+      workspaceRetryButton: document.getElementById('workspaceRetryButton'),
+      workspaceContent: document.getElementById('workspaceContent'),
+      tabNav: document.getElementById('tabNav'),
+      tabButtons: Array.from(document.querySelectorAll('.tab-btn')),
+      panels: {
+        trips: document.getElementById('panel-trips'),
+        costs: document.getElementById('panel-costs'),
+        dashboard: document.getElementById('panel-dashboard'),
+      },
 
-                document.getElementById('accountName').textContent = firstName;
-                document.getElementById('accountAvatar').textContent = initials || 'U';
-            } catch (error) {
-                clearSessionToken();
-                window.location.href = '/login';
-            }
-        }
+      tripsTip: document.getElementById('tripsTip'),
+      costsTip: document.getElementById('costsTip'),
+      dashboardTip: document.getElementById('dashboardTip'),
+      tripDate: document.getElementById('tripDate'),
+      participantPicker: document.getElementById('participantPicker'),
+      participantsError: document.getElementById('participantsError'),
+      odometerReading: document.getElementById('odometerReading'),
+      odometerReadingError: document.getElementById('odometerReadingError'),
+      odometerMinHint: document.getElementById('odometerMinHint'),
+      tripPhoto: document.getElementById('tripPhoto'),
+      tripNotes: document.getElementById('tripNotes'),
+      logTripButton: document.getElementById('logTripButton'),
+      tripMessage: document.getElementById('tripMessage'),
+      tripsCount: document.getElementById('tripsCount'),
+      tripsTableBody: document.getElementById('tripsTableBody'),
+      tripsEmpty: document.getElementById('tripsEmpty'),
+      categoryPicker: document.getElementById('categoryPicker'),
+      categoryError: document.getElementById('categoryError'),
+      costPaidBy: document.getElementById('costPaidBy'),
+      costAmount: document.getElementById('costAmount'),
+      costAmountError: document.getElementById('costAmountError'),
+      costDate: document.getElementById('costDate'),
+      costNotes: document.getElementById('costNotes'),
+      logCostButton: document.getElementById('logCostButton'),
+      costMessage: document.getElementById('costMessage'),
+      costsCount: document.getElementById('costsCount'),
+      costsTableBody: document.getElementById('costsTableBody'),
+      costsEmpty: document.getElementById('costsEmpty'),
+      memberCount: document.getElementById('memberCount'),
+      balancesGrid: document.getElementById('balancesGrid'),
+      activityCount: document.getElementById('activityCount'),
+      activityTableBody: document.getElementById('activityTableBody'),
+      activityEmpty: document.getElementById('activityEmpty'),
+    };
 
-        function toggleAccountMenu() {
-            const menu = document.getElementById('accountMenu');
-            menu.classList.toggle('hidden');
-        }
+    function setDrawerState(isOpen) {
+      state.drawerOpen = isOpen;
+      if (isOpen) {
+        els.drawer.classList.remove('-translate-x-full');
+      } else {
+        els.drawer.classList.add('-translate-x-full');
+      }
+    }
 
-        if (!getSessionToken()) {
-            window.location.href = '/login';
-        }
+    function showPageError(message) {
+      els.errorState.classList.remove('hidden');
+      els.errorMessage.textContent = message;
+    }
 
-        loadUserProfile();
+    async function fetchJson(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: {
+          'Authorization': `Bearer ${state.token}`,
+          'Accept': 'application/json',
+          ...(options.headers || {}),
+        },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(payload.error || 'Request failed');
+        error.fieldErrors = payload.fieldErrors || {};
+        error.requiresConfirmation = payload.requiresConfirmation || false;
+        throw error;
+      }
+      return payload;
+    }
 
-        // Close menu when clicking outside
-        document.addEventListener('click', function(event) {
-            const menu = document.getElementById('accountMenu');
-            const button = event.target.closest('[aria-label="Account menu"]');
-            
-            if (!button && !menu.contains(event.target)) {
-                menu.classList.add('hidden');
-            }
+    function formatKm(value) {
+      if (value === null || value === undefined) return '—';
+      return Math.round(Number(value)).toLocaleString('nl-NL') + ' km';
+    }
+
+    function formatOdometer(value) {
+      if (value === null || value === undefined) return '—';
+      return Math.round(Number(value)).toLocaleString('nl-NL');
+    }
+
+    function formatCurrency(value) {
+      if (value === null || value === undefined) return '—';
+      const sign = value < 0 ? '-' : '';
+      return `${sign}€ ${Math.abs(Number(value)).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function formatDate(isoDate) {
+      if (!isoDate) return '';
+      const [y, m, d] = isoDate.split('-').map((part) => parseInt(part, 10));
+      if (!y || !m || !d) return isoDate;
+      return `${d}-${m}-${y}`;
+    }
+
+    function initials(name) {
+      const parts = (name || 'Member').trim().split(/\s+/);
+      const first = parts[0] ? parts[0][0] : 'M';
+      const second = parts.length > 1 ? parts[parts.length - 1][0] : (parts[0][1] || '');
+      return (first + second).toUpperCase();
+    }
+
+    function avatarColor(userId) {
+      const index = state.members.findIndex((member) => member.userId === userId);
+      return AVATAR_COLORS[index >= 0 ? index % AVATAR_COLORS.length : 0];
+    }
+
+    function avatarBadge(userId, name) {
+      return `<span class="flex h-7 w-7 items-center justify-center rounded-full ${avatarColor(userId)} text-xs font-semibold text-slate-950">${initials(name)}</span>`;
+    }
+
+    function setMessage(el, message, kind) {
+      el.textContent = message;
+      el.className = `mb-4 rounded-lg border p-3 text-sm ${
+        kind === 'success'
+          ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100'
+          : 'border-red-400/40 bg-red-500/10 text-red-200'
+      }`;
+      el.classList.remove('hidden');
+    }
+
+    // ---------- Groups drawer ----------
+
+    function renderGroups() {
+      const hasGroups = state.groups.length > 0;
+      els.groupsList.innerHTML = '';
+
+      if (!hasGroups) {
+        els.emptyDrawerCue.classList.remove('hidden');
+        els.emptyState.classList.remove('hidden');
+        els.workspaceSection.classList.add('hidden');
+        els.tabNav.classList.add('hidden');
+        return;
+      }
+
+      els.emptyDrawerCue.classList.add('hidden');
+      els.emptyState.classList.add('hidden');
+
+      state.groups.forEach((group) => {
+        const li = document.createElement('li');
+        const isActive = group.id === state.activeGroupId;
+        li.className = `rounded-lg border p-3 ${isActive ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 bg-slate-900/50'}`;
+        li.innerHTML = `
+          <p class="font-medium">${group.name}</p>
+          <p class="text-xs text-slate-400">Role: ${group.role || 'member'}</p>
+        `;
+        li.addEventListener('click', () => switchActiveGroup(group.id));
+        els.groupsList.appendChild(li);
+      });
+
+      const active = state.groups.find((g) => g.id === state.activeGroupId) || state.groups[0];
+      state.activeGroupId = active.id;
+      els.activeGroupName.textContent = active.name;
+      els.groupSettingsLink.href = `/groups/${encodeURIComponent(active.id)}/settings`;
+      els.workspaceSection.classList.remove('hidden');
+    }
+
+    async function switchActiveGroup(groupId) {
+      if (groupId === state.activeGroupId) {
+        return;
+      }
+      const previous = state.activeGroupId;
+      state.activeGroupId = groupId;
+      renderGroups();
+      try {
+        await fetchJson(`/api/groups/${encodeURIComponent(groupId)}/activate`, { method: 'POST' });
+        await loadWorkspace();
+      } catch (error) {
+        state.activeGroupId = previous;
+        renderGroups();
+        alert('Could not switch groups. Please try again.');
+      }
+    }
+
+    // ---------- Contextual tips ----------
+
+    async function dismissTip(tipKey) {
+      if (state.seenTips.includes(tipKey)) return;
+      state.seenTips = [...state.seenTips, tipKey];
+      renderTips();
+      try {
+        await fetchJson('/api/profile/tips-seen', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tip: tipKey }),
+        });
+      } catch (error) {
+        // Non-critical: worst case the tip reappears next load.
+      }
+    }
+
+    function renderTips() {
+      els.tripsTip.classList.toggle('hidden', state.seenTips.includes('trips_tip') || !state.tripsLoaded || state.trips.length > 0);
+      els.costsTip.classList.toggle('hidden', state.seenTips.includes('costs_tip') || !state.costsLoaded || state.costs.length > 0);
+      els.dashboardTip.classList.toggle('hidden', state.seenTips.includes('dashboard_tip') || !state.dashboardLoaded || state.balances.length === 0);
+    }
+
+    document.querySelectorAll('[data-dismiss-tip]').forEach((btn) => {
+      btn.addEventListener('click', () => dismissTip(btn.dataset.dismissTip));
+    });
+
+    // ---------- Tabs ----------
+
+    function setActiveTab(tab) {
+      state.activeTab = tab;
+      els.tabButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tab));
+      Object.entries(els.panels).forEach(([name, panel]) => panel.classList.toggle('hidden', name !== tab));
+
+      if (tab === 'trips' && !state.tripsLoaded) loadTrips();
+      if (tab === 'costs' && !state.costsLoaded) loadCosts();
+      if (tab === 'dashboard' && !state.dashboardLoaded) loadBalances();
+    }
+
+    els.tabButtons.forEach((btn) => btn.addEventListener('click', () => setActiveTab(btn.dataset.tab)));
+
+    // ---------- Members / pickers ----------
+
+    function renderParticipantPicker() {
+      els.participantPicker.innerHTML = '';
+      state.members.forEach((member) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = member.name;
+        const isSelected = state.selectedParticipantIds.has(member.userId);
+        btn.className = `pill-btn rounded-full border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm ${isSelected ? 'active' : 'text-slate-200'}`;
+        btn.addEventListener('click', () => {
+          if (state.selectedParticipantIds.has(member.userId)) {
+            state.selectedParticipantIds.delete(member.userId);
+          } else {
+            state.selectedParticipantIds.add(member.userId);
+          }
+          renderParticipantPicker();
+        });
+        els.participantPicker.appendChild(btn);
+      });
+    }
+
+    function renderCategoryPicker() {
+      els.categoryPicker.innerHTML = '';
+      CATEGORIES.forEach((category) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = category;
+        const isSelected = state.selectedCategory === category;
+        btn.className = `pill-btn rounded-full border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm ${isSelected ? 'active' : 'text-slate-200'}`;
+        btn.addEventListener('click', () => {
+          state.selectedCategory = category;
+          renderCategoryPicker();
+        });
+        els.categoryPicker.appendChild(btn);
+      });
+    }
+
+    function renderPaidByOptions() {
+      els.costPaidBy.innerHTML = '';
+      state.members.forEach((member) => {
+        const option = document.createElement('option');
+        option.value = member.userId;
+        option.textContent = member.name;
+        if (member.userId === state.currentUserId) option.selected = true;
+        els.costPaidBy.appendChild(option);
+      });
+    }
+
+    // ---------- Trips ----------
+
+    function renderTrips() {
+      els.tripsCount.textContent = state.trips.length ? `${state.trips.length} trip${state.trips.length === 1 ? '' : 's'}` : '';
+      els.tripsEmpty.classList.toggle('hidden', state.trips.length > 0);
+      els.tripsTableBody.innerHTML = '';
+
+      const latest = state.trips[0];
+      els.odometerMinHint.textContent = latest ? `min ${formatOdometer(latest.odometerReading)}` : '';
+
+      state.trips.forEach((trip) => {
+        const tr = document.createElement('tr');
+        const who = (trip.participants || []).map((p) => p.name).join(' & ') || '—';
+        const whoAvatars = (trip.participants || []).slice(0, 3).map((p) => avatarBadge(p.userId, p.name)).join('');
+        const calibrationBadge = trip.provisional
+          ? '<span class="ml-2 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs text-amber-300">estimated</span>'
+          : '<span class="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-300">confirmed</span>';
+        tr.innerHTML = `
+          <td class="py-2 pr-4 whitespace-nowrap">${formatDate(trip.tripDate)}</td>
+          <td class="py-2 pr-4"><div class="flex items-center gap-2"><div class="flex -space-x-1">${whoAvatars}</div><span class="text-slate-300">${who}</span></div></td>
+          <td class="py-2 pr-4 whitespace-nowrap">${formatOdometer(trip.odometerReading)}${calibrationBadge}</td>
+          <td class="py-2 text-slate-400">${trip.notes || '—'}${trip.editedAt ? ' <span class="text-amber-300">(edited)</span>' : ''}</td>
+        `;
+        els.tripsTableBody.appendChild(tr);
+      });
+    }
+
+    async function loadTrips() {
+      const payload = await fetchJson(`/api/groups/${encodeURIComponent(state.activeGroupId)}/trips`);
+      state.trips = payload.trips || [];
+      state.tripsLoaded = true;
+      renderTrips();
+      renderTips();
+    }
+
+    async function logTrip(confirmLargeDistance = false) {
+      els.odometerReadingError.textContent = '';
+      els.participantsError.textContent = '';
+      els.tripMessage.classList.add('hidden');
+
+      if (state.selectedParticipantIds.size === 0) {
+        els.participantsError.textContent = 'Select at least one participant.';
+        return;
+      }
+
+      els.logTripButton.disabled = true;
+      els.logTripButton.textContent = 'Saving...';
+
+      try {
+        const formData = new FormData();
+        formData.append('odometerReading', els.odometerReading.value);
+        if (els.tripDate.value) formData.append('tripDate', els.tripDate.value);
+        if (els.tripNotes.value) formData.append('notes', els.tripNotes.value);
+        if (els.tripPhoto.files[0]) formData.append('photo', els.tripPhoto.files[0]);
+        if (confirmLargeDistance) formData.append('confirmLargeDistance', 'true');
+        state.selectedParticipantIds.forEach((id) => formData.append('participantIds', id));
+
+        await fetchJson(`/api/groups/${encodeURIComponent(state.activeGroupId)}/trips`, {
+          method: 'POST',
+          body: formData,
         });
 
-        // Handle keyboard navigation
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                document.getElementById('accountMenu').classList.add('hidden');
-            }
+        els.odometerReading.value = '';
+        els.tripPhoto.value = '';
+        els.tripNotes.value = '';
+        state.selectedParticipantIds.clear();
+        renderParticipantPicker();
+        setMessage(els.tripMessage, 'Trip logged.', 'success');
+        state.dashboardLoaded = false;
+        await loadTrips();
+      } catch (error) {
+        if (error.requiresConfirmation) {
+          if (window.confirm(`${error.message} Continue?`)) {
+            await logTrip(true);
+            return;
+          }
+        } else if (error.fieldErrors && error.fieldErrors.odometerReading) {
+          els.odometerReadingError.textContent = error.fieldErrors.odometerReading;
+        } else if (error.fieldErrors && error.fieldErrors.participantIds) {
+          els.participantsError.textContent = error.fieldErrors.participantIds;
+        } else {
+          setMessage(els.tripMessage, error.message || 'Could not log this trip right now.', 'error');
+        }
+      } finally {
+        els.logTripButton.disabled = false;
+        els.logTripButton.textContent = '+ Add trip';
+      }
+    }
+
+    // ---------- Costs ----------
+
+    function renderCosts() {
+      els.costsCount.textContent = state.costs.length ? `${state.costs.length} cost${state.costs.length === 1 ? '' : 's'}` : '';
+      els.costsEmpty.classList.toggle('hidden', state.costs.length > 0);
+      els.costsTableBody.innerHTML = '';
+
+      state.costs.forEach((cost) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="py-2 pr-4 whitespace-nowrap">${formatDate(cost.costDate)}</td>
+          <td class="py-2 pr-4"><span class="rounded-full bg-slate-800 px-2 py-0.5 text-xs">${cost.category}</span></td>
+          <td class="py-2 pr-4"><div class="flex items-center gap-2">${avatarBadge(cost.paidBy, cost.paidByName)}<span>${cost.paidByName}</span></div></td>
+          <td class="py-2 pr-4 whitespace-nowrap font-medium">${formatCurrency(cost.amount)}</td>
+          <td class="py-2 text-slate-400">${cost.notes || '—'}</td>
+        `;
+        els.costsTableBody.appendChild(tr);
+      });
+    }
+
+    async function loadCosts() {
+      const payload = await fetchJson(`/api/groups/${encodeURIComponent(state.activeGroupId)}/costs`);
+      state.costs = payload.costs || [];
+      state.costsLoaded = true;
+      renderCosts();
+      renderTips();
+    }
+
+    async function logCost() {
+      els.categoryError.textContent = '';
+      els.costAmountError.textContent = '';
+      els.costMessage.classList.add('hidden');
+      els.logCostButton.disabled = true;
+      els.logCostButton.textContent = 'Saving...';
+
+      try {
+        await fetchJson(`/api/groups/${encodeURIComponent(state.activeGroupId)}/costs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            category: state.selectedCategory,
+            paidBy: els.costPaidBy.value,
+            amount: Number(els.costAmount.value),
+            costDate: els.costDate.value,
+            notes: els.costNotes.value,
+          }),
         });
-    </script>
-</body>
-</html>
+
+        els.costAmount.value = '';
+        els.costNotes.value = '';
+        setMessage(els.costMessage, 'Cost logged.', 'success');
+        state.dashboardLoaded = false;
+        await loadCosts();
+      } catch (error) {
+        if (error.fieldErrors && error.fieldErrors.category) {
+          els.categoryError.textContent = error.fieldErrors.category;
+        } else if (error.fieldErrors && error.fieldErrors.amount) {
+          els.costAmountError.textContent = error.fieldErrors.amount;
+        } else {
+          setMessage(els.costMessage, error.message || 'Could not log this cost right now.', 'error');
+        }
+      } finally {
+        els.logCostButton.disabled = false;
+        els.logCostButton.textContent = '+ Add cost';
+      }
+    }
+
+    // ---------- Balances ----------
+
+    function renderBalances() {
+      els.memberCount.textContent = `${state.balances.length} member${state.balances.length === 1 ? '' : 's'}`;
+      els.balancesGrid.innerHTML = '';
+
+      state.balances.forEach((balance) => {
+        const card = document.createElement('div');
+        card.className = 'rounded-xl border border-slate-800 bg-slate-900/70 p-4';
+        let statusHtml;
+        if (balance.balance > 0.005) {
+          statusHtml = `<p class="text-lg font-semibold text-emerald-400">+${formatCurrency(balance.balance)}</p><p class="text-xs text-slate-400">is owed</p>`;
+        } else if (balance.balance < -0.005) {
+          statusHtml = `<p class="text-lg font-semibold text-rose-400">${formatCurrency(balance.balance)}</p><p class="text-xs text-slate-400">owes</p>`;
+        } else {
+          statusHtml = `<p class="text-lg font-semibold text-slate-300">€ 0,00</p><p class="text-xs text-slate-400">settled</p>`;
+        }
+        card.innerHTML = `
+          <div class="mb-2 flex items-center gap-2">${avatarBadge(balance.userId, balance.name)}<span class="font-medium">${balance.name}</span></div>
+          ${statusHtml}
+        `;
+        els.balancesGrid.appendChild(card);
+      });
+    }
+
+    function renderActivity() {
+      els.activityCount.textContent = state.activity.length ? `${state.activity.length} entries` : '';
+      els.activityEmpty.classList.toggle('hidden', state.activity.length > 0);
+      els.activityTableBody.innerHTML = '';
+
+      state.activity.forEach((entry) => {
+        const tr = document.createElement('tr');
+        const typeLabel = entry.type === 'trip' ? 'Trip' : 'Cost';
+        const who = (entry.who || []).join(' & ') || '—';
+        tr.innerHTML = `
+          <td class="py-2 pr-4 whitespace-nowrap">${formatDate(entry.date)}</td>
+          <td class="py-2 pr-4 whitespace-nowrap text-slate-300">${typeLabel}</td>
+          <td class="py-2 pr-4">${who}</td>
+          <td class="py-2 pr-4 text-slate-400">${entry.details || ''}</td>
+          <td class="py-2 text-right font-medium">${entry.amount === null || entry.amount === undefined ? '—' : formatCurrency(entry.amount)}</td>
+        `;
+        els.activityTableBody.appendChild(tr);
+      });
+    }
+
+    async function loadBalances() {
+      const payload = await fetchJson(`/api/groups/${encodeURIComponent(state.activeGroupId)}/balances`);
+      state.balances = payload.balances || [];
+      state.activity = payload.activity || [];
+      state.dashboardLoaded = true;
+      renderBalances();
+      renderActivity();
+      renderTips();
+    }
+
+    // ---------- Workspace bootstrap ----------
+
+    function setWorkspaceVisible(view) {
+      els.workspaceLoading.classList.toggle('hidden', view !== 'loading');
+      els.workspaceError.classList.toggle('hidden', view !== 'error');
+      els.workspaceContent.classList.toggle('hidden', view !== 'content');
+      els.tabNav.classList.toggle('hidden', view !== 'content');
+    }
+
+    async function loadWorkspace() {
+      if (!state.activeGroupId) return;
+
+      state.members = [];
+      state.trips = []; state.tripsLoaded = false;
+      state.costs = []; state.costsLoaded = false;
+      state.balances = []; state.activity = []; state.dashboardLoaded = false;
+      state.selectedParticipantIds.clear();
+      state.activeTab = 'trips';
+
+      setWorkspaceVisible('loading');
+
+      try {
+        const membersPayload = await fetchJson(`/api/groups/${encodeURIComponent(state.activeGroupId)}/members`);
+        state.members = membersPayload.members || [];
+        renderParticipantPicker();
+        renderPaidByOptions();
+        renderCategoryPicker();
+
+        const today = new Date().toISOString().slice(0, 10);
+        els.tripDate.value = today;
+        els.costDate.value = today;
+
+        setActiveTab('trips');
+        setWorkspaceVisible('content');
+      } catch (error) {
+        setWorkspaceVisible('error');
+        els.workspaceErrorText.textContent = error.message || 'Unable to load this group right now.';
+      }
+    }
+
+    // ---------- Page bootstrap ----------
+
+    async function initPage() {
+      els.errorState.classList.add('hidden');
+
+      if (!state.token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      try {
+        const profilePayload = await fetchJson('/api/get_user_profile');
+        const profile = profilePayload.user_profile || {};
+
+        if (!profile.onboarding_completed) {
+          window.location.href = '/onboarding';
+          return;
+        }
+
+        state.profile = profile;
+        state.currentUserId = profile.id || null;
+        state.activeGroupId = profile.active_group_id || null;
+        state.seenTips = profile.seen_tips || [];
+        els.insuranceBanner.classList.toggle('hidden', state.seenTips.includes('insurance_banner'));
+        els.insuranceBanner.classList.toggle('flex', !state.seenTips.includes('insurance_banner'));
+
+        const firstName = profile.first_name || 'User';
+        const lastName = profile.last_name || '';
+        const accountInitials = `${(firstName[0] || 'U').toUpperCase()}${(lastName[0] || '').toUpperCase()}`;
+
+        els.accountName.textContent = firstName;
+        els.accountAvatar.textContent = accountInitials || 'U';
+        els.welcomeTitle.textContent = `Welcome, ${firstName}`;
+
+        const groupsPayload = await fetchJson('/api/groups');
+        state.groups = groupsPayload.groups || [];
+        if (groupsPayload.active_group_id) {
+          state.activeGroupId = groupsPayload.active_group_id;
+        }
+
+        renderGroups();
+        if (state.activeGroupId) {
+          await loadWorkspace();
+        }
+      } catch (error) {
+        if (String(error.message).toLowerCase().includes('session')) {
+          clearSessionToken();
+          window.location.href = '/login';
+          return;
+        }
+        showPageError('Could not load your dashboard. Please retry.');
+      }
+    }
+
+    els.menuToggle.addEventListener('click', () => setDrawerState(!state.drawerOpen));
+    els.retryButton.addEventListener('click', initPage);
+    els.workspaceRetryButton.addEventListener('click', loadWorkspace);
+    els.logoutButton.addEventListener('click', () => {
+      clearSessionToken();
+      window.location.href = '/login';
+    });
+
+    els.dismissInsuranceBanner.addEventListener('click', async () => {
+      els.insuranceBanner.classList.add('hidden');
+      els.insuranceBanner.classList.remove('flex');
+      try {
+        await fetchJson('/api/profile/tips-seen', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tip: 'insurance_banner' }),
+        });
+      } catch (error) {
+        // Non-critical: worst case the banner reappears next load.
+      }
+    });
+
+    // TODO: point this at a real shared-car insurance info page/partner once one is chosen.
+    els.insuranceMoreInfo.addEventListener('click', () => {
+      alert('More info coming soon.');
+    });
+
+    els.addButton.addEventListener('click', () => {
+      els.modal.classList.remove('hidden');
+      els.modal.classList.add('flex');
+      els.menuCue.classList.add('hidden');
+    });
+
+    els.closeModal.addEventListener('click', () => {
+      els.modal.classList.add('hidden');
+      els.modal.classList.remove('flex');
+    });
+
+    els.goCreateGroup.addEventListener('click', () => {
+      window.location.href = '/create-group';
+    });
+
+    els.joinGroup.addEventListener('click', () => {
+      const rawLink = window.prompt('Paste an invitation link');
+      if (!rawLink) {
+        return;
+      }
+      const trimmed = rawLink.trim();
+      const marker = '/invite/';
+      const idx = trimmed.indexOf(marker);
+      if (idx === -1) {
+        alert('Please paste a valid invitation link.');
+        return;
+      }
+      const inviteToken = trimmed.slice(idx + marker.length).replace(/\/+$/, '');
+      if (!inviteToken) {
+        alert('Please paste a valid invitation link.');
+        return;
+      }
+      window.location.href = `/invite/${encodeURIComponent(inviteToken)}`;
+    });
+
+    els.logTripButton.addEventListener('click', () => logTrip(false));
+    els.logCostButton.addEventListener('click', logCost);
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 768) {
+        setDrawerState(true);
+      }
+    });
+
+    if (window.innerWidth < 768) {
+      setDrawerState(false);
+    }
+
+    initPage();
+  </script>
+{% endblock %}

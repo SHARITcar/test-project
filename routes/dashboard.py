@@ -28,7 +28,7 @@ def get_user_profile():
         result = (
             db_for(token)
             .table("profiles")
-            .select("first_name, last_name, avatar_url, onboarding_completed, created_at")
+            .select("first_name, last_name, avatar_url, onboarding_completed, active_group_id, seen_tips, created_at")
             .eq("id", str(user.id))
             .single()
             .execute()

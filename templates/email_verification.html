@@ -1,23 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Your Email - SHARIT</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'accent': '#22d3ee'
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-slate-100 flex items-center justify-center p-4">
+{% extends "base.html" %}
+
+{% block title %}Verify Your Email - SHARIT{% endblock %}
+{% block body_class %}min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-slate-100 flex items-center justify-center p-4{% endblock %}
+
+{% block content %}
     <div class="w-full max-w-md">
         <!-- Hero/Header -->
         <div class="text-center mb-8">
@@ -137,5 +123,4 @@
             }, 1000);
         });
     </script>
-</body>
-</html>
+{% endblock %}
