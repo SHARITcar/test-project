@@ -95,18 +95,6 @@ def _upload_trip_photo_to_storage(client, group_id: str, file):
     return photo_url, None
 
 
-def _get_latest_trip(client, group_id: str):
-    result = (
-        client.table("trips")
-        .select("id, odometer_reading")
-        .eq("group_id", group_id)
-        .order("created_at", desc=True)
-        .limit(1)
-        .execute()
-    )
-    return result.data[0] if result.data else None
-
-
 def _get_group_price_per_km(client, group_id: str):
     result = (
         client.table("car_sharing_groups")
@@ -126,7 +114,7 @@ def _profile_name(profile: dict) -> str:
     return " ".join(part for part in [first_name, last_name] if part).strip() or "Member"
 
 
-def _serialize_trip(row: dict, profile_by_id: dict, participant_ids_by_trip: dict, latest_trip_id) -> dict:
+def _serialize_trip(row: dict, profile_by_id: dict, participant_ids_by_trip: dict) -> dict:
     participant_ids = participant_ids_by_trip.get(row["id"], [])
     participants = [
         {"userId": pid, "name": _profile_name(profile_by_id.get(pid, {}))}
@@ -136,8 +124,8 @@ def _serialize_trip(row: dict, profile_by_id: dict, participant_ids_by_trip: dic
         "id": row["id"],
         "loggedBy": row.get("logged_by"),
         "loggedByName": _profile_name(profile_by_id.get(row.get("logged_by"), {})),
-        "odometerReading": row.get("odometer_reading"),
-        "previousOdometerReading": row.get("previous_odometer_reading"),
+        "odometerStart": row.get("odometer_start"),
+        "odometerEnd": row.get("odometer_end"),
         "distanceKm": row.get("distance_km"),
         "cost": row.get("cost"),
         "pricePerKm": row.get("price_per_km_snapshot"),
@@ -147,7 +135,6 @@ def _serialize_trip(row: dict, profile_by_id: dict, participant_ids_by_trip: dic
         "provisional": row.get("provisional", True),
         "editedAt": row.get("edited_at"),
         "createdAt": row.get("created_at"),
-        "isEditable": row["id"] == latest_trip_id,
         "participants": participants,
     }
 
@@ -166,7 +153,7 @@ def list_trips(group_id: str):
         trip_rows = (
             client.table("trips")
             .select(
-                "id, logged_by, odometer_reading, previous_odometer_reading, distance_km, cost, "
+                "id, logged_by, odometer_start, odometer_end, distance_km, cost, "
                 "price_per_km_snapshot, photo_url, notes, trip_date, provisional, edited_at, created_at"
             )
             .eq("group_id", group_id)
@@ -201,11 +188,10 @@ def list_trips(group_id: str):
             )
             profile_by_id = {row["id"]: row for row in (profiles.data or [])}
 
-        latest_trip_id = trips[0]["id"] if trips else None
         total_km = sum((Decimal(str(row["distance_km"])) for row in trips if row.get("distance_km") is not None), Decimal("0"))
         total_cost = sum((Decimal(str(row["cost"])) for row in trips if row.get("cost") is not None), Decimal("0"))
 
-        serialized = [_serialize_trip(row, profile_by_id, participant_ids_by_trip, latest_trip_id) for row in trips]
+        serialized = [_serialize_trip(row, profile_by_id, participant_ids_by_trip) for row in trips]
 
         return jsonify({
             "trips": serialized,
@@ -235,9 +221,14 @@ def log_trip(group_id: str):
 
     field_errors = {}
 
-    odometer_reading = _to_decimal(body.get("odometerReading"))
-    if odometer_reading is None or odometer_reading < 0:
-        field_errors["odometerReading"] = "Enter a valid odometer reading"
+    odometer_start = _to_decimal(body.get("odometerStart"))
+    odometer_end = _to_decimal(body.get("odometerEnd"))
+    if odometer_start is None or odometer_start < 0:
+        field_errors["odometerStart"] = "Enter a valid start odometer reading"
+    if odometer_end is None or odometer_end < 0:
+        field_errors["odometerEnd"] = "Enter a valid end odometer reading"
+    if odometer_start is not None and odometer_end is not None and odometer_end < odometer_start:
+        field_errors["odometerEnd"] = "End reading can't be lower than the start reading"
 
     if not participant_ids:
         field_errors["participantIds"] = "Select at least one participant"
@@ -278,18 +269,9 @@ def log_trip(group_id: str):
                 "fieldErrors": {"participantIds": "Select only current group members"},
             }), 400
 
-        latest_trip = _get_latest_trip(client, group_id)
-        previous_reading = _to_decimal(latest_trip["odometer_reading"]) if latest_trip else None
+        distance_km = odometer_end - odometer_start
 
-        if previous_reading is not None and odometer_reading < previous_reading:
-            return jsonify({
-                "error": "Odometer reading can't be lower than the previous reading",
-                "fieldErrors": {"odometerReading": f"Must be at least {previous_reading} km"},
-            }), 400
-
-        distance_km = (odometer_reading - previous_reading) if previous_reading is not None else None
-
-        if distance_km is not None and distance_km > LARGE_DISTANCE_THRESHOLD_KM and not confirm_large_distance:
+        if distance_km > LARGE_DISTANCE_THRESHOLD_KM and not confirm_large_distance:
             return jsonify({
                 "error": f"This trip is {distance_km} km, which is unusually long. Confirm to log it anyway.",
                 "requiresConfirmation": True,
@@ -297,7 +279,7 @@ def log_trip(group_id: str):
             }), 400
 
         price_per_km = _get_group_price_per_km(client, group_id) or Decimal("0")
-        cost = (distance_km * price_per_km) if distance_km is not None else None
+        cost = distance_km * price_per_km
 
         photo_url = None
         if photo:
@@ -308,16 +290,14 @@ def log_trip(group_id: str):
         trip_insert = {
             "group_id": group_id,
             "logged_by": str(user.id),
-            "odometer_reading": float(odometer_reading),
-            "previous_odometer_reading": float(previous_reading) if previous_reading is not None else None,
-            "distance_km": float(distance_km) if distance_km is not None else None,
+            "odometer_start": float(odometer_start),
+            "odometer_end": float(odometer_end),
+            "distance_km": float(distance_km),
             "price_per_km_snapshot": float(price_per_km),
-            "cost": float(cost) if cost is not None else None,
+            "cost": float(cost),
             "photo_url": photo_url,
             "notes": notes,
-            "large_distance_confirmed": bool(
-                distance_km is not None and distance_km > LARGE_DISTANCE_THRESHOLD_KM
-            ),
+            "large_distance_confirmed": bool(distance_km > LARGE_DISTANCE_THRESHOLD_KM),
         }
         if trip_date_value:
             trip_insert["trip_date"] = trip_date_value.isoformat()
@@ -355,17 +335,11 @@ def edit_trip(group_id: str, trip_id: str):
         if not _require_membership(client, group_id, str(user.id)):
             return jsonify({"error": "Group not found or access denied"}), 404
 
-        # v1 only allows editing the most recent trip: an earlier trip's distance is used
-        # as the baseline for every later trip, so changing it would require recomputing
-        # every trip after it. Out of scope for now -- see CLAUDE.md "Wrong entry" edge case.
-        latest_trip = _get_latest_trip(client, group_id)
-        if not latest_trip or latest_trip["id"] != trip_id:
-            return jsonify({"error": "Only the most recent trip can be edited"}), 400
-
         trip_result = (
             client.table("trips")
-            .select("id, previous_odometer_reading, price_per_km_snapshot")
+            .select("id, price_per_km_snapshot")
             .eq("id", trip_id)
+            .eq("group_id", group_id)
             .limit(1)
             .execute()
         )
@@ -376,19 +350,37 @@ def edit_trip(group_id: str, trip_id: str):
         updates = {}
         field_errors = {}
 
-        if "odometerReading" in body:
-            odometer_reading = _to_decimal(body.get("odometerReading"))
-            previous_reading = _to_decimal(trip.get("previous_odometer_reading"))
-            if odometer_reading is None or odometer_reading < 0:
-                field_errors["odometerReading"] = "Enter a valid odometer reading"
-            elif previous_reading is not None and odometer_reading < previous_reading:
-                field_errors["odometerReading"] = f"Must be at least {previous_reading} km"
+        odometer_start = _to_decimal(body.get("odometerStart")) if "odometerStart" in body else None
+        odometer_end = _to_decimal(body.get("odometerEnd")) if "odometerEnd" in body else None
+
+        if "odometerStart" in body and (odometer_start is None or odometer_start < 0):
+            field_errors["odometerStart"] = "Enter a valid start odometer reading"
+        if "odometerEnd" in body and (odometer_end is None or odometer_end < 0):
+            field_errors["odometerEnd"] = "Enter a valid end odometer reading"
+
+        if not field_errors and (odometer_start is not None or odometer_end is not None):
+            current = (
+                client.table("trips")
+                .select("odometer_start, odometer_end")
+                .eq("id", trip_id)
+                .limit(1)
+                .execute()
+            )
+            current_row = current.data[0] if current.data else {}
+            new_start = odometer_start if odometer_start is not None else _to_decimal(current_row.get("odometer_start"))
+            new_end = odometer_end if odometer_end is not None else _to_decimal(current_row.get("odometer_end"))
+
+            if new_start is not None and new_end is not None and new_end < new_start:
+                field_errors["odometerEnd"] = "End reading can't be lower than the start reading"
             else:
-                distance_km = (odometer_reading - previous_reading) if previous_reading is not None else None
+                distance_km = new_end - new_start
                 price_per_km = _to_decimal(trip.get("price_per_km_snapshot")) or Decimal("0")
-                updates["odometer_reading"] = float(odometer_reading)
-                updates["distance_km"] = float(distance_km) if distance_km is not None else None
-                updates["cost"] = float(distance_km * price_per_km) if distance_km is not None else None
+                if odometer_start is not None:
+                    updates["odometer_start"] = float(odometer_start)
+                if odometer_end is not None:
+                    updates["odometer_end"] = float(odometer_end)
+                updates["distance_km"] = float(distance_km)
+                updates["cost"] = float(distance_km * price_per_km)
 
         if "notes" in body:
             updates["notes"] = str(body.get("notes") or "").strip() or None

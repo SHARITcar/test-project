@@ -3,6 +3,8 @@
 # ============================================
 
 import logging
+import os
+import uuid
 from flask import Blueprint, request, jsonify
 from supabase_client import db_for, get_user_from_token, get_token_from_request
 
@@ -87,6 +89,95 @@ def update_profile_settings():
     except Exception as exc:
         logger.error(f"Error updating profile for {user.id}: {exc}")
         return jsonify({'error': 'Failed to update profile'}), 500
+
+
+@bp.route('/api/profile/photo', methods=['POST'])
+def upload_profile_photo():
+    """Upload a new profile photo and set it as the user's avatar_url."""
+    token = get_token_from_request(request)
+    if not token:
+        return jsonify({'error': 'Authorization header required'}), 401
+
+    user = get_user_from_token(token)
+    if not user:
+        return jsonify({'error': 'Invalid or expired session'}), 401
+
+    file = request.files.get('photo')
+    if not file:
+        return jsonify({'error': 'photo file is required'}), 400
+
+    mimetype = (file.mimetype or '').lower()
+    if not mimetype.startswith('image/'):
+        return jsonify({'error': 'Only image uploads are allowed'}), 400
+
+    try:
+        client = db_for(token)
+        bucket_name = os.getenv('AVATAR_BUCKET', 'avatars')
+        extension = (file.filename.rsplit('.', 1)[-1] if file.filename and '.' in file.filename else 'jpg').lower()
+        object_path = f"{user.id}/{uuid.uuid4()}.{extension}"
+
+        upload_result = client.storage.from_(bucket_name).upload(
+            object_path,
+            file.read(),
+            {'content-type': mimetype, 'upsert': 'true'},
+        )
+        if isinstance(upload_result, dict) and upload_result.get('error'):
+            raise RuntimeError(upload_result['error'])
+
+        public_result = client.storage.from_(bucket_name).get_public_url(object_path)
+        if isinstance(public_result, dict):
+            photo_url = public_result.get('publicURL') or public_result.get('public_url')
+        else:
+            photo_url = str(public_result)
+        if not photo_url:
+            raise RuntimeError('Could not resolve uploaded photo URL')
+
+        result = (
+            client.table('profiles')
+            .update({'avatar_url': photo_url})
+            .eq('id', str(user.id))
+            .execute()
+        )
+        if not result.data:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        return jsonify({'avatar_url': photo_url}), 200
+
+    except Exception as exc:
+        logger.error(f"Failed to upload profile photo for {user.id}: {exc}")
+        return jsonify({'error': "We couldn't upload your photo right now. Please try again."}), 500
+
+
+@bp.route('/api/profile/delete-account', methods=['POST'])
+def delete_account():
+    """Soft-delete the current user's account: mark it deleted so login is blocked,
+    without touching the underlying Supabase Auth user (which would require the
+    service-role key -- never used in request-scoped user code). Group history the
+    user was part of stays intact for other members, matching the privacy policy."""
+    token = get_token_from_request(request)
+    if not token:
+        return jsonify({'error': 'Authorization header required'}), 401
+
+    user = get_user_from_token(token)
+    if not user:
+        return jsonify({'error': 'Invalid or expired session'}), 401
+
+    try:
+        result = (
+            db_for(token)
+            .table('profiles')
+            .update({'account_status': 'deleted'})
+            .eq('id', str(user.id))
+            .execute()
+        )
+        if not result.data:
+            return jsonify({'error': 'Profile not found'}), 404
+
+        return jsonify({'message': 'Account deleted'}), 200
+
+    except Exception as exc:
+        logger.error(f"Failed to delete account for {user.id}: {exc}")
+        return jsonify({'error': "We couldn't delete your account right now. Please try again."}), 500
 
 
 _KNOWN_TIPS = {'trips_tip', 'costs_tip', 'dashboard_tip', 'insurance_banner'}

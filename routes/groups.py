@@ -1,11 +1,17 @@
 import json
 import logging
 import os
+import re
 import secrets
+import ssl
+import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 
+import certifi
 from flask import Blueprint, jsonify, request
 
 from supabase_client import db_for, get_token_from_request, get_user_from_token, supabase
@@ -14,6 +20,9 @@ bp = Blueprint("groups", __name__)
 logger = logging.getLogger(__name__)
 
 MAX_GROUP_NAME_LENGTH = 120
+FIXED_COST_SPLIT_METHODS = ("equal", "per_km")
+PRICE_PER_KM_MODES = ("auto", "manual")
+FUEL_COUNTRIES = ("NL", "BE", "DE")
 MIN_PRICE_PER_KM = Decimal("0.0001")
 MAX_PRICE_PER_KM = Decimal("100")
 MAX_PARTICIPANTS_PREVIEW = 10
@@ -283,6 +292,14 @@ def _validate_group_payload(payload: dict):
     elif price_per_km < MIN_PRICE_PER_KM or price_per_km > MAX_PRICE_PER_KM:
         errors["pricePerKilometer"] = "Price per kilometer must be between 0.0001 and 100"
 
+    price_per_km_mode = (payload.get("pricePerKmMode") or "manual").strip()
+    if price_per_km_mode not in PRICE_PER_KM_MODES:
+        errors["pricePerKmMode"] = "Price mode must be 'auto' or 'manual'"
+
+    fuel_country = (payload.get("fuelCountry") or "NL").strip()
+    if fuel_country not in FUEL_COUNTRIES:
+        errors["fuelCountry"] = "Fuel country must be 'NL', 'BE', or 'DE'"
+
     reminder_type = (payload.get("reminderType") or "").strip()
     if not reminder_type:
         errors["reminderType"] = "Reminder type is required"
@@ -305,18 +322,22 @@ def _validate_group_payload(payload: dict):
         cost_type = (cost.get("type") or "").strip()
         amount = _to_decimal(cost.get("amount"))
         description = (cost.get("description") or "").strip() or None
+        split_method = (cost.get("splitMethod") or "equal").strip()
 
         if not cost_type:
             errors[f"fixedCosts.{i}.type"] = "Cost type is required"
         if amount is None or amount < 0:
             errors[f"fixedCosts.{i}.amount"] = "Amount must be a non-negative number"
+        if split_method not in FIXED_COST_SPLIT_METHODS:
+            errors[f"fixedCosts.{i}.splitMethod"] = "Split method must be 'equal' or 'per_km'"
 
-        if cost_type and amount is not None and amount >= 0:
+        if cost_type and amount is not None and amount >= 0 and split_method in FIXED_COST_SPLIT_METHODS:
             normalized_costs.append(
                 {
                     "cost_type": cost_type,
                     "amount": float(amount),
                     "description": description,
+                    "split_method": split_method,
                 }
             )
 
@@ -325,10 +346,115 @@ def _validate_group_payload(payload: dict):
         group_name,
         license_plate,
         price_per_km,
+        price_per_km_mode,
+        fuel_country,
         reminder_type,
         internal_agreements,
         normalized_costs,
     )
+
+
+RDW_VEHICLE_URL = "https://opendata.rdw.nl/resource/m9d7-ebf2.json"
+RDW_FUEL_URL = "https://opendata.rdw.nl/resource/8ys7-d773.json"
+PDOK_LOCATIESERVER_URL = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free"
+
+
+_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
+
+
+def _fetch_json(url: str, timeout: float = 5.0):
+    try:
+        with urllib.request.urlopen(url, timeout=timeout, context=_SSL_CONTEXT) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError, OSError) as exc:
+        logger.warning(f"External lookup failed for {url}: {exc}")
+        return None
+
+
+def _normalize_license_plate(raw: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]", "", raw or "").upper()
+
+
+@bp.route("/api/vehicle-lookup", methods=["GET"])
+def vehicle_lookup():
+    """Look up a Dutch license plate via RDW open data: brand, model, year,
+    and fuel consumption (used to suggest a price-per-km on group creation)."""
+    token, user, error = _auth_context()
+    if error:
+        return error
+
+    plate = _normalize_license_plate(request.args.get("licensePlate", ""))
+    if not plate:
+        return jsonify({"found": False}), 200
+
+    vehicle_url = f"{RDW_VEHICLE_URL}?{urllib.parse.urlencode({'kenteken': plate})}"
+    vehicles = _fetch_json(vehicle_url)
+    if not vehicles:
+        return jsonify({"found": False}), 200
+
+    vehicle = vehicles[0]
+    year = None
+    first_registration = vehicle.get("datum_eerste_toelating")
+    if first_registration and len(first_registration) >= 4:
+        try:
+            year = int(first_registration[:4])
+        except ValueError:
+            year = None
+
+    consumption = None
+    fuel_type = None
+    fuel_url = f"{RDW_FUEL_URL}?{urllib.parse.urlencode({'kenteken': plate})}"
+    fuel_rows = _fetch_json(fuel_url)
+    if fuel_rows:
+        fuel_row = fuel_rows[0]
+        fuel_type = fuel_row.get("brandstof_omschrijving")
+        raw_consumption = fuel_row.get("brandstofverbruik_gecombineerd")
+        if raw_consumption:
+            try:
+                consumption = float(raw_consumption)
+            except (TypeError, ValueError):
+                consumption = None
+
+    return jsonify({
+        "found": True,
+        "brand": vehicle.get("merk"),
+        "model": vehicle.get("handelsbenaming"),
+        "year": year,
+        "fuelType": fuel_type,
+        "consumptionL100km": consumption,
+    }), 200
+
+
+@bp.route("/api/address-lookup", methods=["GET"])
+def address_lookup():
+    """Resolve a Dutch postal code + house number to a full address via PDOK
+    Locatieserver (public Dutch government geocoding API)."""
+    token, user, error = _auth_context()
+    if error:
+        return error
+
+    postal_code = re.sub(r"\s+", "", (request.args.get("postalCode") or "")).upper()
+    house_number = re.sub(r"[^0-9]", "", (request.args.get("houseNumber") or ""))
+    if not postal_code or not house_number:
+        return jsonify({"found": False}), 200
+
+    query = f"postcode:{postal_code} AND huisnummer:{house_number}"
+    lookup_url = f"{PDOK_LOCATIESERVER_URL}?{urllib.parse.urlencode({'q': query, 'rows': 1})}"
+    result = _fetch_json(lookup_url)
+    docs = ((result or {}).get("response") or {}).get("docs") or []
+    if not docs:
+        return jsonify({"found": False}), 200
+
+    doc = docs[0]
+    street = doc.get("straatnaam") or ""
+    house_display = doc.get("huis_nlt") or str(doc.get("huisnummer") or house_number)
+    return jsonify({
+        "found": True,
+        "street": f"{street} {house_display}".strip(),
+        "city": doc.get("woonplaatsnaam"),
+        "postalCode": doc.get("postcode") or postal_code,
+        "country": "Netherlands",
+    }), 200
 
 
 @bp.route("/api/reminder-types", methods=["GET"])
@@ -702,6 +828,8 @@ def create_group():
         group_name,
         license_plate,
         price_per_km,
+        price_per_km_mode,
+        fuel_country,
         reminder_type,
         internal_agreements,
         normalized_costs,
@@ -800,6 +928,8 @@ def create_group():
             "name": group_name,
             "license_plate": license_plate,
             "price_per_km": float(price_per_km),
+            "price_per_km_mode": price_per_km_mode,
+            "fuel_country": fuel_country,
             "reminder_type": reminder_row["name"],
             "internal_agreements": internal_agreements,
             "invite_link": invite_link,
@@ -858,6 +988,7 @@ def create_group():
                         "cost_type": cost["cost_type"],
                         "amount": cost["amount"],
                         "description": cost["description"],
+                        "split_method": cost["split_method"],
                     }
                 )
             client.table("group_fixed_costs").insert(fixed_cost_rows).execute()
@@ -1028,6 +1159,20 @@ def _validate_group_update_payload(payload: dict):
         else:
             updates["price_per_km"] = float(price_per_km)
 
+    if "pricePerKmMode" in payload:
+        price_per_km_mode = (payload.get("pricePerKmMode") or "").strip()
+        if price_per_km_mode not in PRICE_PER_KM_MODES:
+            errors["pricePerKmMode"] = "Price mode must be 'auto' or 'manual'"
+        else:
+            updates["price_per_km_mode"] = price_per_km_mode
+
+    if "fuelCountry" in payload:
+        fuel_country = (payload.get("fuelCountry") or "").strip()
+        if fuel_country not in FUEL_COUNTRIES:
+            errors["fuelCountry"] = "Fuel country must be 'NL', 'BE', or 'DE'"
+        else:
+            updates["fuel_country"] = fuel_country
+
     if "reminderType" in payload:
         reminder_type = (payload.get("reminderType") or "").strip()
         if not reminder_type:
@@ -1060,7 +1205,8 @@ def group_detail(group_id: str):
             group_result = (
                 client.table("car_sharing_groups")
                 .select(
-                    "id, name, license_plate, photo_url, price_per_km, reminder_type, "
+                    "id, name, license_plate, photo_url, price_per_km, price_per_km_mode, "
+                    "fuel_country, reminder_type, "
                     "internal_agreements, invite_link, member_count, created_at"
                 )
                 .eq("id", group_id)
@@ -1192,23 +1338,34 @@ def leave_group(group_id: str):
 
     try:
         client = db_for(token)
-        if not _require_membership(client, group_id, str(user.id)):
+        requester_membership = _require_membership(client, group_id, str(user.id))
+        if not requester_membership:
             return jsonify({"error": "Group not found or access denied"}), 404
 
         remaining = (
             client.table("group_members")
-            .select("id")
+            .select("id, user_id, role, joined_at")
             .eq("group_id", group_id)
             .execute()
         )
-        if len(remaining.data or []) <= 1:
+        remaining_rows = remaining.data or []
+        if len(remaining_rows) <= 1:
             return jsonify({
                 "error": "You're the last member of this group. Invite someone else before leaving."
             }), 400
 
-        # Ownership isn't transferred on leave: if the owner leaves a multi-member group,
-        # the group has no owner afterward and member-removal becomes unavailable until
-        # that's addressed. Acceptable for now since "role" isn't enforced elsewhere.
+        if requester_membership.get("role") == "owner":
+            other_owners = [
+                row for row in remaining_rows
+                if row.get("role") == "owner" and row.get("user_id") != str(user.id)
+            ]
+            if not other_owners:
+                # Last owner leaving: promote someone rather than leave the group ownerless.
+                others = [row for row in remaining_rows if row.get("user_id") != str(user.id)]
+                if others:
+                    successor = min(others, key=lambda row: row.get("joined_at") or "")
+                    client.table("group_members").update({"role": "owner"}).eq("id", successor["id"]).execute()
+
         client.table("group_members").delete().eq("group_id", group_id).eq("user_id", str(user.id)).execute()
         _decrement_member_count(client, group_id)
 
@@ -1253,3 +1410,82 @@ def remove_group_member(group_id: str, member_user_id: str):
     except Exception as exc:
         logger.error(f"Failed to remove member {member_user_id} from group {group_id}: {exc}")
         return jsonify(_friendly_error("We couldn't remove that member right now. Please retry.", can_retry=True)), 500
+
+
+@bp.route("/api/groups/<group_id>/members/<member_user_id>/promote", methods=["POST"])
+def promote_group_member(group_id: str, member_user_id: str):
+    token, user, error = _auth_context()
+    if error:
+        return error
+
+    try:
+        client = db_for(token)
+        requester_membership = _require_membership(client, group_id, str(user.id))
+        if not requester_membership:
+            return jsonify({"error": "Group not found or access denied"}), 404
+        if requester_membership.get("role") != "owner":
+            return jsonify({"error": "Only a group owner can promote members"}), 403
+
+        target = (
+            client.table("group_members")
+            .select("id, role")
+            .eq("group_id", group_id)
+            .eq("user_id", member_user_id)
+            .limit(1)
+            .execute()
+        )
+        if not target.data:
+            return jsonify({"error": "Member not found in this group"}), 404
+
+        target_row = target.data[0]
+        if target_row.get("role") != "owner":
+            client.table("group_members").update({"role": "owner"}).eq("id", target_row["id"]).execute()
+
+        return jsonify({"success": True, "role": "owner"}), 200
+
+    except Exception as exc:
+        logger.error(f"Failed to promote member {member_user_id} in group {group_id}: {exc}")
+        return jsonify(_friendly_error("We couldn't update that member's role right now. Please retry.", can_retry=True)), 500
+
+
+@bp.route("/api/groups/<group_id>/members/<member_user_id>/demote", methods=["POST"])
+def demote_group_member(group_id: str, member_user_id: str):
+    token, user, error = _auth_context()
+    if error:
+        return error
+
+    try:
+        client = db_for(token)
+        requester_membership = _require_membership(client, group_id, str(user.id))
+        if not requester_membership:
+            return jsonify({"error": "Group not found or access denied"}), 404
+        if requester_membership.get("role") != "owner":
+            return jsonify({"error": "Only a group owner can demote an owner"}), 403
+
+        member_rows = (
+            client.table("group_members")
+            .select("id, user_id, role")
+            .eq("group_id", group_id)
+            .execute()
+        )
+        rows = member_rows.data or []
+        target_row = next((row for row in rows if row.get("user_id") == member_user_id), None)
+        if not target_row:
+            return jsonify({"error": "Member not found in this group"}), 404
+
+        if target_row.get("role") != "owner":
+            return jsonify({"success": True, "role": "member"}), 200
+
+        other_owners = [
+            row for row in rows
+            if row.get("role") == "owner" and row.get("user_id") != member_user_id
+        ]
+        if not other_owners:
+            return jsonify({"error": "A group must always have at least one owner"}), 400
+
+        client.table("group_members").update({"role": "member"}).eq("id", target_row["id"]).execute()
+        return jsonify({"success": True, "role": "member"}), 200
+
+    except Exception as exc:
+        logger.error(f"Failed to demote member {member_user_id} in group {group_id}: {exc}")
+        return jsonify(_friendly_error("We couldn't update that member's role right now. Please retry.", can_retry=True)), 500

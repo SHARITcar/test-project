@@ -71,12 +71,14 @@ class TripsRouteTests(unittest.TestCase):
         db_client.table.side_effect = [
             _mock_table([{"id": "membership-1"}]),
             _mock_table([
-                {"id": "trip-2", "logged_by": "user-123", "odometer_reading": 120, "previous_odometer_reading": 100,
+                {"id": "trip-2", "logged_by": "user-123", "odometer_start": 100, "odometer_end": 120,
                  "distance_km": 20, "cost": 9.0, "price_per_km_snapshot": 0.45, "photo_url": None,
-                 "notes": None, "trip_date": "2026-08-18", "edited_at": None, "created_at": "2026-08-18T10:00:00Z"},
-                {"id": "trip-1", "logged_by": "user-123", "odometer_reading": 100, "previous_odometer_reading": None,
-                 "distance_km": None, "cost": None, "price_per_km_snapshot": 0.45, "photo_url": None,
-                 "notes": None, "trip_date": "2026-08-17", "edited_at": None, "created_at": "2026-08-17T10:00:00Z"},
+                 "notes": None, "trip_date": "2026-08-18", "provisional": True, "edited_at": None,
+                 "created_at": "2026-08-18T10:00:00Z"},
+                {"id": "trip-1", "logged_by": "user-123", "odometer_start": 80, "odometer_end": 100,
+                 "distance_km": 20, "cost": 9.0, "price_per_km_snapshot": 0.45, "photo_url": None,
+                 "notes": None, "trip_date": "2026-08-17", "provisional": True, "edited_at": None,
+                 "created_at": "2026-08-17T10:00:00Z"},
             ]),
             _mock_table([
                 {"trip_id": "trip-2", "user_id": "user-123"},
@@ -93,50 +95,44 @@ class TripsRouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
         self.assertEqual(len(payload["trips"]), 2)
-        self.assertEqual(payload["summary"]["totalKm"], 20.0)
-        self.assertTrue(payload["trips"][0]["isEditable"])
-        self.assertFalse(payload["trips"][1]["isEditable"])
+        self.assertEqual(payload["summary"]["totalKm"], 40.0)
+        self.assertEqual(payload["trips"][0]["odometerStart"], 100)
+        self.assertEqual(payload["trips"][0]["odometerEnd"], 120)
 
     def test_log_trip_validation_error(self):
         self._setup_valid_session()
         response = self.client.post(
             "/api/groups/group-123/trips",
-            data={"odometerReading": "not-a-number"},
+            data={"odometerStart": "not-a-number", "odometerEnd": "not-a-number"},
             headers={"Authorization": "Bearer test-access-token"},
             content_type="multipart/form-data",
         )
         self.assertEqual(response.status_code, 400)
-        self.assertIn("odometerReading", response.get_json()["fieldErrors"])
+        field_errors = response.get_json()["fieldErrors"]
+        self.assertIn("odometerStart", field_errors)
+        self.assertIn("odometerEnd", field_errors)
 
     def test_log_trip_requires_participants(self):
         self._setup_valid_session()
         response = self.client.post(
             "/api/groups/group-123/trips",
-            data={"odometerReading": "100"},
+            data={"odometerStart": "100", "odometerEnd": "120"},
             headers={"Authorization": "Bearer test-access-token"},
             content_type="multipart/form-data",
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("participantIds", response.get_json()["fieldErrors"])
 
-    def test_log_trip_rejects_lower_reading(self):
+    def test_log_trip_rejects_end_before_start(self):
         self._setup_valid_session()
-        db_client = MagicMock()
-        db_client.table.side_effect = [
-            _mock_table([{"id": "membership-1"}]),
-            _mock_table([{"user_id": "user-123"}]),  # group members (participant validation)
-            _mock_table([{"id": "trip-1", "odometer_reading": 500}]),
-        ]
-        self.fake_sc.db_for.return_value = db_client
-
         response = self.client.post(
             "/api/groups/group-123/trips",
-            data={"odometerReading": "400", "participantIds": "user-123"},
+            data={"odometerStart": "150", "odometerEnd": "100", "participantIds": "user-123"},
             headers={"Authorization": "Bearer test-access-token"},
             content_type="multipart/form-data",
         )
         self.assertEqual(response.status_code, 400)
-        self.assertIn("odometerReading", response.get_json()["fieldErrors"])
+        self.assertIn("odometerEnd", response.get_json()["fieldErrors"])
 
     def test_log_trip_rejects_non_member_participant(self):
         self._setup_valid_session()
@@ -149,35 +145,35 @@ class TripsRouteTests(unittest.TestCase):
 
         response = self.client.post(
             "/api/groups/group-123/trips",
-            data={"odometerReading": "100", "participantIds": "user-999"},
+            data={"odometerStart": "100", "odometerEnd": "120", "participantIds": "user-999"},
             headers={"Authorization": "Bearer test-access-token"},
             content_type="multipart/form-data",
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("participantIds", response.get_json()["fieldErrors"])
 
-    def test_log_trip_first_reading_sets_baseline(self):
+    def test_log_trip_success(self):
         self._setup_valid_session()
         db_client = MagicMock()
         db_client.table.side_effect = [
             _mock_table([{"id": "membership-1"}]),  # membership
             _mock_table([{"user_id": "user-123"}]),  # group members
-            _mock_table([]),  # no previous trip
             _mock_table([{"price_per_km": 0.45}]),  # group price
-            _mock_table([{"id": "trip-1", "odometer_reading": 100, "distance_km": None, "cost": None}]),  # insert trip
+            _mock_table([{"id": "trip-1", "odometer_start": 100, "odometer_end": 120, "distance_km": 20, "cost": 9.0}]),  # insert trip
             _mock_table([{"trip_id": "trip-1", "user_id": "user-123"}]),  # insert participants
         ]
         self.fake_sc.db_for.return_value = db_client
 
         response = self.client.post(
             "/api/groups/group-123/trips",
-            data={"odometerReading": "100", "participantIds": "user-123"},
+            data={"odometerStart": "100", "odometerEnd": "120", "participantIds": "user-123"},
             headers={"Authorization": "Bearer test-access-token"},
             content_type="multipart/form-data",
         )
         self.assertEqual(response.status_code, 201)
         payload = response.get_json()
-        self.assertIsNone(payload["trip"]["distance_km"])
+        self.assertEqual(payload["trip"]["distance_km"], 20)
+        self.assertEqual(payload["trip"]["cost"], 9.0)
 
     def test_log_trip_requires_confirmation_for_large_distance(self):
         self._setup_valid_session()
@@ -185,13 +181,12 @@ class TripsRouteTests(unittest.TestCase):
         db_client.table.side_effect = [
             _mock_table([{"id": "membership-1"}]),  # membership
             _mock_table([{"user_id": "user-123"}]),  # group members
-            _mock_table([{"id": "trip-1", "odometer_reading": 100}]),  # previous trip
         ]
         self.fake_sc.db_for.return_value = db_client
 
         response = self.client.post(
             "/api/groups/group-123/trips",
-            data={"odometerReading": "300", "participantIds": "user-123"},
+            data={"odometerStart": "100", "odometerEnd": "300", "participantIds": "user-123"},
             headers={"Authorization": "Bearer test-access-token"},
             content_type="multipart/form-data",
         )
@@ -206,16 +201,15 @@ class TripsRouteTests(unittest.TestCase):
         db_client.table.side_effect = [
             _mock_table([{"id": "membership-1"}]),  # membership
             _mock_table([{"user_id": "user-123"}]),  # group members
-            _mock_table([{"id": "trip-1", "odometer_reading": 100}]),  # previous trip
             _mock_table([{"price_per_km": 0.45}]),  # group price
-            _mock_table([{"id": "trip-2", "odometer_reading": 300, "distance_km": 200, "cost": 90.0}]),  # insert trip
+            _mock_table([{"id": "trip-2", "odometer_start": 100, "odometer_end": 300, "distance_km": 200, "cost": 90.0}]),  # insert trip
             _mock_table([{"trip_id": "trip-2", "user_id": "user-123"}]),  # insert participants
         ]
         self.fake_sc.db_for.return_value = db_client
 
         response = self.client.post(
             "/api/groups/group-123/trips",
-            data={"odometerReading": "300", "confirmLargeDistance": "true", "participantIds": "user-123"},
+            data={"odometerStart": "100", "odometerEnd": "300", "confirmLargeDistance": "true", "participantIds": "user-123"},
             headers={"Authorization": "Bearer test-access-token"},
             content_type="multipart/form-data",
         )
@@ -224,41 +218,94 @@ class TripsRouteTests(unittest.TestCase):
         self.assertEqual(payload["trip"]["distance_km"], 200)
         self.assertEqual(payload["trip"]["cost"], 90.0)
 
-    def test_edit_trip_rejects_non_latest_trip(self):
+    def test_edit_trip_not_found(self):
         self._setup_valid_session()
         db_client = MagicMock()
         db_client.table.side_effect = [
             _mock_table([{"id": "membership-1"}]),  # membership
-            _mock_table([{"id": "trip-2", "odometer_reading": 300}]),  # latest trip is trip-2
+            _mock_table([]),  # trip lookup: not found
         ]
         self.fake_sc.db_for.return_value = db_client
 
         response = self.client.patch(
             "/api/groups/group-123/trips/trip-1",
-            json={"odometerReading": 250},
+            json={"odometerEnd": 320},
             headers={"Authorization": "Bearer test-access-token"},
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
 
-    def test_edit_trip_success(self):
+    def test_edit_trip_updates_end_reading(self):
         self._setup_valid_session()
         db_client = MagicMock()
         db_client.table.side_effect = [
             _mock_table([{"id": "membership-1"}]),  # membership
-            _mock_table([{"id": "trip-1", "odometer_reading": 300}]),  # latest trip
-            _mock_table([{"id": "trip-1", "previous_odometer_reading": 100, "price_per_km_snapshot": 0.45}]),  # trip detail
-            _mock_table([{"id": "trip-1", "odometer_reading": 310, "distance_km": 210, "cost": 94.5}]),  # update
+            _mock_table([{"id": "trip-1", "price_per_km_snapshot": 0.45}]),  # trip lookup
+            _mock_table([{"odometer_start": 100, "odometer_end": 300}]),  # current readings
+            _mock_table([{"id": "trip-1", "odometer_start": 100, "odometer_end": 320, "distance_km": 220, "cost": 99.0}]),  # update
         ]
         self.fake_sc.db_for.return_value = db_client
 
         response = self.client.patch(
             "/api/groups/group-123/trips/trip-1",
-            json={"odometerReading": 310},
+            json={"odometerEnd": 320},
             headers={"Authorization": "Bearer test-access-token"},
         )
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
-        self.assertEqual(payload["trip"]["odometer_reading"], 310)
+        self.assertEqual(payload["trip"]["odometer_end"], 320)
+        self.assertEqual(payload["trip"]["distance_km"], 220)
+
+    def test_edit_trip_rejects_end_before_start(self):
+        self._setup_valid_session()
+        db_client = MagicMock()
+        db_client.table.side_effect = [
+            _mock_table([{"id": "membership-1"}]),  # membership
+            _mock_table([{"id": "trip-1", "price_per_km_snapshot": 0.45}]),  # trip lookup
+            _mock_table([{"odometer_start": 100, "odometer_end": 300}]),  # current readings
+        ]
+        self.fake_sc.db_for.return_value = db_client
+
+        response = self.client.patch(
+            "/api/groups/group-123/trips/trip-1",
+            json={"odometerStart": 150, "odometerEnd": 100},
+            headers={"Authorization": "Bearer test-access-token"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("odometerEnd", response.get_json()["fieldErrors"])
+
+    def test_edit_trip_notes_only(self):
+        self._setup_valid_session()
+        db_client = MagicMock()
+        db_client.table.side_effect = [
+            _mock_table([{"id": "membership-1"}]),  # membership
+            _mock_table([{"id": "trip-1", "price_per_km_snapshot": 0.45}]),  # trip lookup
+            _mock_table([{"id": "trip-1", "notes": "Grocery run"}]),  # update
+        ]
+        self.fake_sc.db_for.return_value = db_client
+
+        response = self.client.patch(
+            "/api/groups/group-123/trips/trip-1",
+            json={"notes": "Grocery run"},
+            headers={"Authorization": "Bearer test-access-token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["trip"]["notes"], "Grocery run")
+
+    def test_edit_trip_no_changes(self):
+        self._setup_valid_session()
+        db_client = MagicMock()
+        db_client.table.side_effect = [
+            _mock_table([{"id": "membership-1"}]),  # membership
+            _mock_table([{"id": "trip-1", "price_per_km_snapshot": 0.45}]),  # trip lookup
+        ]
+        self.fake_sc.db_for.return_value = db_client
+
+        response = self.client.patch(
+            "/api/groups/group-123/trips/trip-1",
+            json={},
+            headers={"Authorization": "Bearer test-access-token"},
+        )
+        self.assertEqual(response.status_code, 400)
 
 
 if __name__ == "__main__":
