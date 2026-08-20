@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - SHARIT{% endblock %}
+{% block body_class %}min-h-screen bg-shell text-slate-100{% endblock %}
+{% block head_extra %}
+<style>
+    .bg-shell { background: radial-gradient(circle at 20% 10%, #0f172a, #020617 60%); }
+    .lang-btn.active { border-color: #22d3ee; background-color: rgba(6, 182, 212, 0.1); color: #f1f5f9; }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <main class="mx-auto max-w-2xl px-4 py-8">
+    <header class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-semibold">Settings</h1>
+      <a href="/dashboard" class="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">Back to dashboard</a>
+    </header>
+
+    <section id="accountCard" class="mb-6 flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900/70 p-5">
+      <div id="accountAvatar" class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-cyan-500 text-lg font-semibold text-slate-900">U</div>
+      <div class="min-w-0">
+        <p id="accountName" class="truncate font-medium">&nbsp;</p>
+        <p id="accountEmail" class="truncate text-sm text-slate-400">&nbsp;</p>
+      </div>
+    </section>
+
+    <nav class="space-y-6">
+      <section>
+        <h2 class="mb-2 text-sm font-medium uppercase tracking-wide text-slate-400">Account</h2>
+        <a href="/profile-settings" class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/70 p-4 hover:border-slate-600">
+          <div>
+            <p class="font-medium">Personal profile</p>
+            <p class="text-sm text-slate-400">Photo, name, email, password, delete account</p>
+          </div>
+          <span class="text-slate-500">&rarr;</span>
+        </a>
+      </section>
+
+      <section>
+        <h2 class="mb-2 text-sm font-medium uppercase tracking-wide text-slate-400">Groups</h2>
+        <a href="/dashboard" class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/70 p-4 hover:border-slate-600">
+          <div>
+            <p class="font-medium">Your groups</p>
+            <p id="groupCountHint" class="text-sm text-slate-400">Manage or switch between your car-sharing groups</p>
+          </div>
+          <span class="text-slate-500">&rarr;</span>
+        </a>
+      </section>
+
+      <section>
+        <h2 class="mb-2 text-sm font-medium uppercase tracking-wide text-slate-400">Language</h2>
+        <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-3" id="languageOptions">
+            <button type="button" data-lang="system" class="lang-btn rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm">System default</button>
+            <button type="button" data-lang="en" class="lang-btn rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm">English</button>
+            <button type="button" data-lang="nl" class="lang-btn rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm">Nederlands</button>
+          </div>
+          <p class="mt-2 text-xs text-slate-500">Applies to your dashboard. System default follows your device's language.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="mb-2 text-sm font-medium uppercase tracking-wide text-slate-400">App settings</h2>
+        <div class="space-y-2">
+          <a href="/faq" class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/70 p-4 hover:border-slate-600">
+            <p class="font-medium">FAQs</p>
+            <span class="text-slate-500">&rarr;</span>
+          </a>
+          <a href="/privacy" class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/70 p-4 hover:border-slate-600">
+            <p class="font-medium">Privacy</p>
+            <span class="text-slate-500">&rarr;</span>
+          </a>
+          <a href="/terms" class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/70 p-4 hover:border-slate-600">
+            <p class="font-medium">Terms</p>
+            <span class="text-slate-500">&rarr;</span>
+          </a>
+        </div>
+      </section>
+
+      <section>
+        <button id="signOutButton" class="w-full rounded-xl border border-red-400/40 bg-red-500/5 p-4 text-center font-medium text-red-200 hover:bg-red-500/10">Sign out</button>
+      </section>
+    </nav>
+  </main>
+
+  <script>
+    function getSessionToken() {
+      return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
+    }
+
+    function clearSessionToken() {
+      window.localStorage.removeItem('session_token');
+      window.sessionStorage.removeItem('session_token');
+    }
+
+    const token = getSessionToken();
+    if (!token) {
+      window.location.href = '/login';
+    }
+
+    async function fetchJson(path) {
+      const response = await fetch(path, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'Request failed');
+      return payload;
+    }
+
+    function initials(firstName, lastName) {
+      const a = (firstName || '')[0] || '';
+      const b = (lastName || '')[0] || '';
+      return `${a}${b}`.toUpperCase() || 'U';
+    }
+
+    async function init() {
+      try {
+        const profilePayload = await fetchJson('/api/get_user_profile');
+        const profile = profilePayload.user_profile || {};
+        document.getElementById('accountName').textContent = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Your account';
+        document.getElementById('accountEmail').textContent = profile.email || '';
+        document.getElementById('accountAvatar').textContent = initials(profile.first_name, profile.last_name);
+      } catch (error) {
+        if (String(error.message).toLowerCase().includes('session')) {
+          clearSessionToken();
+          window.location.href = '/login';
+          return;
+        }
+      }
+
+      try {
+        const groupsPayload = await fetchJson('/api/groups');
+        const count = (groupsPayload.groups || []).length;
+        document.getElementById('groupCountHint').textContent = count
+          ? `${count} group${count === 1 ? '' : 's'} &mdash; manage or switch between them`.replace('&mdash;', '—')
+          : 'You\'re not in any groups yet';
+      } catch (error) {
+        // Non-critical: leave the default hint text.
+      }
+    }
+
+    document.getElementById('signOutButton').addEventListener('click', () => {
+      clearSessionToken();
+      window.location.href = '/login';
+    });
+
+    function renderLanguageOptions() {
+      const current = window.localStorage.getItem('sharit_language') || 'system';
+      document.querySelectorAll('.lang-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.lang === current);
+      });
+    }
+
+    document.querySelectorAll('.lang-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        window.localStorage.setItem('sharit_language', btn.dataset.lang);
+        renderLanguageOptions();
+      });
+    });
+    renderLanguageOptions();
+
+    init();
+  </script>
+{% endblock %}

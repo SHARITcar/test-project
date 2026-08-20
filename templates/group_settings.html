@@ -5,6 +5,7 @@
 {% block head_extra %}
 <style>
     .bg-shell { background: radial-gradient(circle at 20% 10%, #0f172a, #020617 60%); }
+    .price-mode-btn.active { border-color: #22d3ee; background-color: rgba(6, 182, 212, 0.1); }
   </style>
 {% endblock %}
 
@@ -43,6 +44,30 @@
         <input id="pricePerKilometer" type="number" min="0.0001" max="100" step="0.01" class="mb-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
         <p id="pricePerKilometerError" class="mb-3 text-sm text-red-300"></p>
 
+        <div class="mb-4 rounded-lg border border-slate-700 bg-slate-950/60 p-3">
+          <p class="mb-2 text-sm font-medium text-slate-200">How should this price stay up to date?</p>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <button type="button" data-price-mode="auto" class="price-mode-btn rounded-lg border border-slate-700 bg-slate-950 p-3 text-left text-sm">
+              <span class="font-medium">Auto-adjust</span>
+              <p class="mt-1 text-xs text-slate-400">Recalculate it from your car's efficiency and fuel country whenever you refresh it here.</p>
+            </button>
+            <button type="button" data-price-mode="manual" class="price-mode-btn rounded-lg border border-slate-700 bg-slate-950 p-3 text-left text-sm">
+              <span class="font-medium">Keep it fixed</span>
+              <p class="mt-1 text-xs text-slate-400">Stays exactly as set until you change it yourself.</p>
+            </button>
+          </div>
+          <div id="fuelCountryRow" class="mt-3 hidden flex-wrap items-center gap-2">
+            <label class="text-sm text-slate-300" for="fuelCountry">Fuel price country</label>
+            <select id="fuelCountry" class="rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-sm">
+              <option value="NL">Netherlands</option>
+              <option value="BE">Belgium</option>
+              <option value="DE">Germany</option>
+            </select>
+            <button type="button" id="refreshSuggestedPrice" class="ml-auto rounded-md border border-cyan-400/50 px-3 py-1 text-sm text-cyan-200 hover:bg-cyan-500/10">Refresh suggested price</button>
+          </div>
+          <p id="refreshPriceResult" class="mt-2 text-xs text-slate-400"></p>
+        </div>
+
         <label class="mb-1 block text-sm text-slate-300" for="reminderType">Reminder type</label>
         <select id="reminderType" class="mb-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></select>
         <p id="reminderTypeError" class="mb-3 text-sm text-red-300"></p>
@@ -51,14 +76,16 @@
         <h3 class="mb-2 mt-2 text-sm font-medium uppercase tracking-wide text-slate-400">Internal agreements</h3>
         <label class="mb-1 block text-sm text-slate-300" for="agreementKeys">Keys</label>
         <textarea id="agreementKeys" rows="2" class="mb-3 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
-        <label class="mb-1 block text-sm text-slate-300" for="agreementParking">Parking</label>
+        <label class="mb-1 block text-sm text-slate-300" for="agreementParking">Parking location</label>
         <textarea id="agreementParking" rows="2" class="mb-3 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
         <label class="mb-1 block text-sm text-slate-300" for="agreementHygiene">Hygiene</label>
         <textarea id="agreementHygiene" rows="2" class="mb-3 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
         <label class="mb-1 block text-sm text-slate-300" for="agreementDamage">Damage</label>
         <textarea id="agreementDamage" rows="2" class="mb-3 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
-        <label class="mb-1 block text-sm text-slate-300" for="agreementDocuments">Documents</label>
-        <textarea id="agreementDocuments" rows="2" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
+        <label class="mb-1 block text-sm text-slate-300" for="agreementDocuments">Vehicle registration certificate location</label>
+        <textarea id="agreementDocuments" rows="2" class="mb-3 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
+        <label class="mb-1 block text-sm text-slate-300" for="agreementOther">Something else</label>
+        <textarea id="agreementOther" rows="2" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
 
         <button id="saveButton" class="rounded-md bg-cyan-500 px-4 py-2 font-semibold text-slate-900">Save changes</button>
       </section>
@@ -86,6 +113,14 @@
       return parts.length >= 2 ? parts[1] : '';
     }
 
+    const FUEL_PRICE_PER_LITER_BY_COUNTRY = {
+      NL: { name: 'the Netherlands', price: 2.05 },
+      BE: { name: 'Belgium', price: 1.80 },
+      DE: { name: 'Germany', price: 1.75 },
+    };
+    const DEFAULT_CONSUMPTION_L100KM = 6.5;
+    const PRICE_BUFFER = 0.05;
+
     const state = {
       token: getSessionToken(),
       groupId: getGroupId(),
@@ -93,6 +128,8 @@
       group: null,
       members: [],
       reminderTypes: [],
+      priceMode: 'manual',
+      fuelCountry: 'NL',
     };
 
     const els = {
@@ -107,6 +144,10 @@
       licensePlate: document.getElementById('licensePlate'),
       pricePerKilometer: document.getElementById('pricePerKilometer'),
       pricePerKilometerError: document.getElementById('pricePerKilometerError'),
+      fuelCountryRow: document.getElementById('fuelCountryRow'),
+      fuelCountry: document.getElementById('fuelCountry'),
+      refreshSuggestedPrice: document.getElementById('refreshSuggestedPrice'),
+      refreshPriceResult: document.getElementById('refreshPriceResult'),
       reminderType: document.getElementById('reminderType'),
       reminderTypeError: document.getElementById('reminderTypeError'),
       physicalReminderNote: document.getElementById('physicalReminderNote'),
@@ -115,6 +156,7 @@
       agreementHygiene: document.getElementById('agreementHygiene'),
       agreementDamage: document.getElementById('agreementDamage'),
       agreementDocuments: document.getElementById('agreementDocuments'),
+      agreementOther: document.getElementById('agreementOther'),
       saveButton: document.getElementById('saveButton'),
       membersList: document.getElementById('membersList'),
       leaveButton: document.getElementById('leaveButton'),
@@ -187,11 +229,51 @@
       }
     }
 
+    function renderPriceModeRow() {
+      document.querySelectorAll('.price-mode-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.priceMode === state.priceMode);
+      });
+      const isAuto = state.priceMode === 'auto';
+      els.fuelCountryRow.classList.toggle('hidden', !isAuto);
+      els.fuelCountryRow.classList.toggle('flex', isAuto);
+    }
+
+    async function refreshSuggestedPrice() {
+      const plate = (els.licensePlate.value || '').trim();
+      if (!plate) {
+        els.refreshPriceResult.textContent = 'Add a license plate above first — we use it to look up your car\'s fuel efficiency.';
+        return;
+      }
+
+      els.refreshPriceResult.textContent = 'Looking up your car...';
+      try {
+        const vehicle = await fetchJson(`/api/vehicle-lookup?licensePlate=${encodeURIComponent(plate)}`);
+        const consumption = (vehicle.found && vehicle.consumptionL100km) || DEFAULT_CONSUMPTION_L100KM;
+        const country = FUEL_PRICE_PER_LITER_BY_COUNTRY[state.fuelCountry] || FUEL_PRICE_PER_LITER_BY_COUNTRY.NL;
+        const suggested = Math.round((((consumption / 100) * country.price) + PRICE_BUFFER) * 100) / 100;
+        els.pricePerKilometer.value = suggested.toFixed(2);
+        els.pricePerKilometerError.textContent = '';
+
+        const vehicleLabel = vehicle.found ? `${vehicle.brand || ''} ${vehicle.model || ''}`.trim() : 'an average car';
+        const now = new Date();
+        const checkedLabel = `${now.toLocaleDateString('en-GB')} ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+        els.refreshPriceResult.textContent = `Suggested €${suggested.toFixed(2)}/km based on ${vehicleLabel} `
+          + `(${consumption.toFixed(1)} L/100km) and fuel prices in ${country.name} (checked ${checkedLabel}). Save to apply it.`;
+      } catch (error) {
+        els.refreshPriceResult.textContent = 'Could not look up your car right now. Please retry.';
+      }
+    }
+
     function renderGroup() {
       const group = state.group;
       els.groupName.value = group.name || '';
       els.licensePlate.value = group.license_plate || '';
       els.pricePerKilometer.value = group.price_per_km || '';
+      state.priceMode = group.price_per_km_mode || 'manual';
+      state.fuelCountry = group.fuel_country || 'NL';
+      els.fuelCountry.value = state.fuelCountry;
+      els.refreshPriceResult.textContent = '';
+      renderPriceModeRow();
 
       const agreements = group.internal_agreements || {};
       els.agreementKeys.value = agreements.keys || '';
@@ -199,29 +281,52 @@
       els.agreementHygiene.value = agreements.hygiene || '';
       els.agreementDamage.value = agreements.damage || '';
       els.agreementDocuments.value = agreements.documents || '';
+      els.agreementOther.value = agreements.other || '';
 
       renderReminderOptions();
     }
 
     function renderMembers() {
       els.membersList.innerHTML = '';
+      const ownerCount = state.members.filter((m) => m.role === 'owner').length;
+      const currentUserIsOwner = state.members.some((m) => m.userId === state.currentUserId && m.role === 'owner');
+
       state.members.forEach((member) => {
         const li = document.createElement('li');
-        li.className = 'flex items-center justify-between rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm';
+        li.className = 'flex flex-col gap-2 rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between';
 
         const info = document.createElement('div');
         info.innerHTML = `<p class="font-medium">${member.name}</p><p class="text-xs text-slate-400">${member.role || 'member'}</p>`;
         li.appendChild(info);
 
         const isSelf = member.userId === state.currentUserId;
-        const currentUserIsOwner = state.members.some((m) => m.userId === state.currentUserId && m.role === 'owner');
         if (!isSelf && currentUserIsOwner) {
+          const actions = document.createElement('div');
+          actions.className = 'flex flex-wrap items-center gap-2';
+
+          const roleBtn = document.createElement('button');
+          roleBtn.type = 'button';
+          if (member.role === 'owner') {
+            roleBtn.textContent = 'Remove as owner';
+            roleBtn.className = 'whitespace-nowrap rounded-md border border-slate-600 px-3 py-1 text-slate-200 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40';
+            roleBtn.disabled = ownerCount <= 1;
+            roleBtn.title = ownerCount <= 1 ? 'A group must always have at least one owner' : '';
+            roleBtn.addEventListener('click', () => demoteMember(member.userId));
+          } else {
+            roleBtn.textContent = 'Make owner';
+            roleBtn.className = 'whitespace-nowrap rounded-md border border-cyan-400/50 px-3 py-1 text-cyan-200 hover:bg-cyan-500/10';
+            roleBtn.addEventListener('click', () => promoteMember(member.userId));
+          }
+          actions.appendChild(roleBtn);
+
           const removeBtn = document.createElement('button');
           removeBtn.type = 'button';
           removeBtn.textContent = 'Remove';
-          removeBtn.className = 'rounded-md border border-red-400/50 px-3 py-1 text-red-200 hover:bg-red-500/10';
+          removeBtn.className = 'whitespace-nowrap rounded-md border border-red-400/50 px-3 py-1 text-red-200 hover:bg-red-500/10';
           removeBtn.addEventListener('click', () => removeMember(member.userId));
-          li.appendChild(removeBtn);
+          actions.appendChild(removeBtn);
+
+          li.appendChild(actions);
         }
 
         els.membersList.appendChild(li);
@@ -239,6 +344,31 @@
         await loadMembers();
       } catch (error) {
         alert(error.message || 'Could not remove that member right now.');
+      }
+    }
+
+    async function promoteMember(userId) {
+      try {
+        await fetchJson(`/api/groups/${encodeURIComponent(state.groupId)}/members/${encodeURIComponent(userId)}/promote`, {
+          method: 'POST',
+        });
+        await loadMembers();
+      } catch (error) {
+        alert(error.message || 'Could not make that member an owner right now.');
+      }
+    }
+
+    async function demoteMember(userId) {
+      if (!window.confirm('Remove this member as an owner?')) {
+        return;
+      }
+      try {
+        await fetchJson(`/api/groups/${encodeURIComponent(state.groupId)}/members/${encodeURIComponent(userId)}/demote`, {
+          method: 'POST',
+        });
+        await loadMembers();
+      } catch (error) {
+        alert(error.message || 'Could not update that member\'s role right now.');
       }
     }
 
@@ -287,12 +417,15 @@
           groupName: els.groupName.value,
           licensePlate: els.licensePlate.value,
           pricePerKilometer: Number(els.pricePerKilometer.value),
+          pricePerKmMode: state.priceMode,
+          fuelCountry: state.fuelCountry,
           internalAgreements: {
             keys: els.agreementKeys.value,
             parking: els.agreementParking.value,
             hygiene: els.agreementHygiene.value,
             damage: els.agreementDamage.value,
             documents: els.agreementDocuments.value,
+            other: els.agreementOther.value,
           },
         };
         if (!els.reminderType.disabled) {
@@ -333,6 +466,18 @@
     }
 
     els.retryButton.addEventListener('click', loadGroup);
+
+    document.querySelectorAll('.price-mode-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.priceMode = btn.dataset.priceMode;
+        renderPriceModeRow();
+      });
+    });
+    els.fuelCountry.addEventListener('change', () => {
+      state.fuelCountry = els.fuelCountry.value;
+    });
+    els.refreshSuggestedPrice.addEventListener('click', refreshSuggestedPrice);
+
     els.saveButton.addEventListener('click', saveGroup);
     els.leaveButton.addEventListener('click', leaveGroup);
 

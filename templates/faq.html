@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}FAQs - SHARIT{% endblock %}
+{% block body_class %}min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-slate-100{% endblock %}
+
+{% block content %}
+    <main class="max-w-4xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
+        <div class="bg-slate-800/60 border border-slate-700/60 rounded-3xl shadow-2xl backdrop-blur-sm p-6 sm:p-8 lg:p-10">
+            <header class="mb-8">
+                <a href="/settings" class="inline-flex items-center text-sm text-accent hover:text-cyan-300 transition-colors duration-200 mb-6">
+                    &larr; Back to settings
+                </a>
+                <h1 class="text-3xl sm:text-4xl font-bold mb-3">Frequently asked questions</h1>
+            </header>
+
+            <div class="space-y-8 text-slate-200 leading-7">
+                <section class="space-y-2">
+                    <h2 class="text-xl font-semibold text-slate-100">How do I log a trip?</h2>
+                    <p>Open your group, go to the Trips tab, and enter the odometer reading at the start and end of your drive. SHARIT calculates the distance and cost automatically using your group's price per kilometer.</p>
+                </section>
+
+                <section class="space-y-2">
+                    <h2 class="text-xl font-semibold text-slate-100">How is the price per kilometer decided?</h2>
+                    <p>When you create a group, you can set a fixed price yourself or let SHARIT suggest one based on your car's fuel efficiency and current fuel prices. You can switch between a fixed price and an auto-suggested one anytime in group settings.</p>
+                </section>
+
+                <section class="space-y-2">
+                    <h2 class="text-xl font-semibold text-slate-100">How are costs split?</h2>
+                    <p>Every trip is priced automatically and split evenly among that trip's participants. Fixed costs (like insurance or road tax) are split either evenly or by kilometers driven, based on what you choose when adding the cost — and that split is locked in at the time, so it won't change later if someone joins or leaves the group.</p>
+                </section>
+
+                <section class="space-y-2">
+                    <h2 class="text-xl font-semibold text-slate-100">Can I edit a trip after logging it?</h2>
+                    <p>Yes. Any group member can correct a trip's odometer readings or notes. Edits are visible to the whole group, so nothing changes quietly.</p>
+                </section>
+
+                <section class="space-y-2">
+                    <h2 class="text-xl font-semibold text-slate-100">Can a group have more than one owner?</h2>
+                    <p>Yes. An owner can promote any member to owner from group settings, and demote a co-owner back to member — a group always keeps at least one owner. If the last owner leaves the group, SHARIT automatically promotes the longest-standing member.</p>
+                </section>
+
+                <section class="space-y-2">
+                    <h2 class="text-xl font-semibold text-slate-100">Who can see what inside a group?</h2>
+                    <p>Every member of a group can see all trips, costs, and balances for that group — that's what makes the numbers trustworthy. Groups are fully separated from each other: nothing you do in one group is visible in another.</p>
+                </section>
+
+                <section class="space-y-2">
+                    <h2 class="text-xl font-semibold text-slate-100">Does SHARIT handle payments between members?</h2>
+                    <p>No. SHARIT keeps the ledger of who owes whom, but settling up happens outside the app — however your group prefers.</p>
+                </section>
+
+                <section class="space-y-2">
+                    <h2 class="text-xl font-semibold text-slate-100">Still have a question?</h2>
+                    <p>Reach us at <a href="mailto:info@sharit.me" class="text-accent hover:text-cyan-300">info@sharit.me</a>.</p>
+                </section>
+            </div>
+        </div>
+    </main>
+{% endblock %}

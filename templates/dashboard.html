@@ -12,6 +12,7 @@
     }
     .tab-btn.active { background: #1e293b; color: #f1f5f9; }
     .pill-btn.active { background: #f1f5f9; color: #0f172a; }
+    .scope-btn.active { background: #1e293b; color: #f1f5f9; }
   </style>
 {% endblock %}
 
@@ -27,18 +28,17 @@
         <h1 class="text-xl font-semibold">SHARIT</h1>
       </div>
 
-      <div class="flex items-center gap-3">
+      <button id="accountButton" class="flex items-center gap-3 rounded-lg px-2 py-1 hover:bg-slate-800" title="Settings">
         <div id="accountAvatar" class="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500 font-semibold text-slate-900">U</div>
         <span id="accountName" class="hidden text-sm text-slate-300 sm:inline">User</span>
-        <button id="logoutButton" class="rounded-md border border-slate-700 px-3 py-2 text-xs text-slate-200 hover:bg-slate-800">Sign out</button>
-      </div>
+      </button>
     </div>
   </header>
 
   <div class="mx-auto flex max-w-6xl">
-    <aside id="groupsDrawer" class="fixed inset-y-0 left-0 z-40 w-80 -translate-x-full border-r border-slate-800 bg-slate-950/95 p-4 transition-transform duration-200 md:relative md:translate-x-0">
+    <aside id="groupsDrawer" class="fixed left-0 top-16 bottom-0 z-40 w-80 -translate-x-full border-r border-slate-800 bg-slate-950/95 p-4 transition-transform duration-200 md:relative md:top-auto md:translate-x-0">
       <div class="mb-5 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">Your groups</h2>
+        <h2 class="text-lg font-semibold" data-i18n="yourGroups">Your groups</h2>
         <button id="addGroupButton" class="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500 text-slate-900 hover:bg-cyan-400" title="Add group">+</button>
       </div>
       <div id="emptyDrawerCue" class="mb-4 hidden rounded-lg border border-cyan-400/50 bg-cyan-500/10 p-3 text-sm text-cyan-200">
@@ -49,203 +49,255 @@
 
     <main class="w-full px-4 py-10 pb-28 md:ml-0">
       <section class="mx-auto max-w-4xl text-center">
-        <h2 id="welcomeTitle" class="mb-3 text-3xl font-bold">Welcome</h2>
-        <p class="text-slate-300">Track shared car usage and keep costs fair across your group.</p>
+        <h2 id="welcomeTitle" class="mb-3 text-3xl font-bold" data-i18n="welcome">Welcome</h2>
+        <p class="text-slate-300" data-i18n="trackShared">Track shared car usage and keep costs fair across your group.</p>
       </section>
 
       <div id="insuranceBanner" class="mx-auto mt-6 hidden max-w-4xl items-start justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-500/10 p-4 text-sm text-amber-100">
-        <p>Niet de pineut zijn als iemand anders schade rijdt? Er zijn verzekeringen voor gedeeld autogebruik. <button type="button" id="insuranceMoreInfo" class="font-semibold underline underline-offset-2 hover:text-white">Meer info</button></p>
+        <p><span data-i18n="insuranceBanner">Niet de pineut zijn als iemand anders schade rijdt? Er zijn verzekeringen voor gedeeld autogebruik.</span> <button type="button" id="insuranceMoreInfo" class="font-semibold underline underline-offset-2 hover:text-white" data-i18n="moreInfo">Meer info</button></p>
         <button type="button" id="dismissInsuranceBanner" class="shrink-0 text-amber-200 hover:text-white">&times;</button>
       </div>
 
       <section id="dashboardEmptyState" class="mx-auto mt-10 max-w-2xl rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center">
-        <h3 class="mb-2 text-xl font-semibold">No car-sharing groups yet</h3>
-        <p class="text-slate-400">Open the menu to create or join a group.</p>
+        <h3 class="mb-2 text-xl font-semibold" data-i18n="noGroupsYet">No car-sharing groups yet</h3>
+        <p class="text-slate-400" data-i18n="openMenu">Open the menu to create or join a group.</p>
         <div id="menuCue" class="mt-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/50 bg-cyan-500/10 px-4 py-2 text-sm text-cyan-200 cue-pulse">
-          <span>Start with the menu</span>
+          <span data-i18n="startWithMenu">Start with the menu</span>
           <span>[menu]</span>
         </div>
       </section>
 
       <section id="dashboardErrorState" class="mx-auto mt-10 hidden max-w-2xl rounded-xl border border-red-400/40 bg-red-500/10 p-5 text-red-200">
-        <p id="dashboardErrorMessage">Unable to load dashboard.</p>
-        <button id="retryDashboard" class="mt-3 rounded-md bg-red-500 px-3 py-2 text-white">Retry</button>
+        <p id="dashboardErrorMessage" data-i18n="unableToLoadDashboard">Unable to load dashboard.</p>
+        <button id="retryDashboard" class="mt-3 rounded-md bg-red-500 px-3 py-2 text-white" data-i18n="retry">Retry</button>
       </section>
 
       <!-- ACTIVE GROUP WORKSPACE -->
       <div id="workspaceSection" class="mx-auto mt-8 hidden max-w-4xl">
         <div class="mb-4 flex items-center justify-between">
           <h2 id="activeGroupName" class="text-xl font-semibold"></h2>
-          <a id="groupSettingsLink" href="#" class="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">Group settings</a>
+          <a id="groupSettingsLink" href="#" class="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800" data-i18n="groupSettings">Group settings</a>
         </div>
 
         <section id="workspaceLoading" class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
-          <p class="text-slate-300">Loading...</p>
+          <p class="text-slate-300" data-i18n="loading">Loading...</p>
         </section>
 
         <section id="workspaceError" class="hidden rounded-xl border border-red-400/40 bg-red-500/10 p-6 text-red-200">
-          <p id="workspaceErrorText">Unable to load this group right now.</p>
-          <button id="workspaceRetryButton" class="mt-4 rounded-md bg-red-500 px-3 py-2 text-white">Retry</button>
+          <p id="workspaceErrorText" data-i18n="unableToLoadGroup">Unable to load this group right now.</p>
+          <button id="workspaceRetryButton" class="mt-4 rounded-md bg-red-500 px-3 py-2 text-white" data-i18n="retry">Retry</button>
         </section>
 
         <div id="workspaceContent" class="hidden space-y-6">
 
           <!-- TRIPS TAB -->
           <div id="panel-trips" class="space-y-6">
+            <div id="lastTripCard" class="hidden rounded-xl border border-cyan-400/30 bg-cyan-500/10 p-4">
+              <p class="text-xs uppercase tracking-wide text-cyan-200" data-i18n="currentOdometer">Current odometer</p>
+              <p id="lastTripOdometer" class="text-2xl font-semibold">&mdash;</p>
+              <div class="mt-3 flex items-center justify-between text-sm">
+                <div>
+                  <p class="text-slate-400" data-i18n="lastTrip">Last trip</p>
+                  <p id="lastTripDate" class="font-medium">&mdash;</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-slate-400" data-i18n="hasTheKey">Has the key</p>
+                  <p id="lastTripParticipants" class="font-medium">&mdash;</p>
+                </div>
+              </div>
+            </div>
+
             <div id="tripsTip" class="hidden flex items-start justify-between gap-3 rounded-lg border border-cyan-400/30 bg-cyan-500/10 p-3 text-sm text-cyan-100">
-              <p>Voer bij elke rit de totale kilometerstand in — niet de dagstand. Aan het einde van de rit hoef je niets opnieuw in te vullen.</p>
+              <p data-i18n="tripsTip">Voer bij elke rit de totale kilometerstand in — niet de dagstand. Aan het einde van de rit hoef je niets opnieuw in te vullen.</p>
               <button type="button" data-dismiss-tip="trips_tip" class="shrink-0 text-cyan-200 hover:text-white">&times;</button>
             </div>
 
             <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
-              <h2 class="mb-4 text-lg font-semibold">Add trip</h2>
+              <h2 class="mb-4 text-lg font-semibold" data-i18n="addTrip">Add trip</h2>
               <p id="tripMessage" class="mb-4 hidden rounded-lg border p-3 text-sm"></p>
 
-              <label class="mb-1 block text-sm text-slate-300" for="tripDate">Date</label>
+              <label class="mb-1 block text-sm text-slate-300" for="tripDate" data-i18n="date">Date</label>
               <input id="tripDate" type="date" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
 
-              <p class="mb-1 block text-sm text-slate-300">Participants</p>
+              <p class="mb-1 block text-sm text-slate-300" data-i18n="participants">Participants</p>
               <div id="participantPicker" class="mb-1 flex flex-wrap gap-2"></div>
               <p id="participantsError" class="mb-3 text-sm text-red-300"></p>
 
               <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label class="mb-1 block text-sm text-slate-300" for="odometerReading">
-                    Odometer reading <span id="odometerMinHint" class="text-slate-500"></span>
-                  </label>
-                  <input id="odometerReading" type="number" min="0" step="0.1" inputmode="decimal" placeholder="e.g. 198138" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-lg">
-                  <p id="odometerReadingError" class="mt-1 text-sm text-red-300"></p>
+                  <label class="mb-1 block text-sm text-slate-300" for="odometerStart"><span data-i18n="startOdometer">Start odometer</span> <span id="odometerStartMinHint" class="text-slate-500"></span></label>
+                  <input id="odometerStart" type="number" min="0" step="0.1" inputmode="decimal" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-lg">
+                  <p id="odometerStartError" class="mt-1 text-sm text-red-300"></p>
                 </div>
                 <div>
-                  <label class="mb-1 block text-sm text-slate-300" for="tripPhoto">Odometer photo <span class="text-slate-500">optional</span></label>
-                  <input id="tripPhoto" type="file" accept="image/*" capture="environment" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm">
+                  <label class="mb-1 block text-sm text-slate-300" for="odometerEnd" data-i18n="endOdometer">End odometer</label>
+                  <input id="odometerEnd" type="number" min="0" step="0.1" inputmode="decimal" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-lg">
+                  <p id="odometerEndError" class="mt-1 text-sm text-red-300"></p>
                 </div>
               </div>
 
-              <label class="mb-1 block text-sm text-slate-300" for="tripNotes">Note <span class="text-slate-500">optional</span></label>
-              <textarea id="tripNotes" rows="1" placeholder="What was the trip for?" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
+              <label class="mb-1 block text-sm text-slate-300" for="tripPhoto"><span data-i18n="odometerPhoto">Odometer photo</span> <span class="text-slate-500" data-i18n="optional">optional</span></label>
+              <input id="tripPhoto" type="file" accept="image/*" capture="environment" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm">
 
-              <button id="logTripButton" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">+ Add trip</button>
+              <label class="mb-1 block text-sm text-slate-300" for="tripNotes"><span data-i18n="note">Note</span> <span class="text-slate-500" data-i18n="optional">optional</span></label>
+              <textarea id="tripNotes" rows="1" data-i18n-placeholder="whatWasTripFor" placeholder="What was the trip for?" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
+
+              <button id="logTripButton" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">+ <span data-i18n="addTrip">Add trip</span></button>
             </section>
 
             <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
               <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-lg font-semibold">Trip history</h2>
+                <h2 class="text-lg font-semibold" data-i18n="tripHistory">Trip history</h2>
                 <span id="tripsCount" class="text-sm text-slate-400"></span>
               </div>
               <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
+                <table class="w-full min-w-[520px] text-left text-sm">
                   <thead class="text-xs uppercase tracking-wide text-slate-400">
                     <tr>
-                      <th class="pb-2 pr-4">Date</th>
-                      <th class="pb-2 pr-4">Participants</th>
-                      <th class="pb-2 pr-4">Odometer</th>
-                      <th class="pb-2">Note</th>
+                      <th class="pb-2 pr-4" data-i18n="date">Date</th>
+                      <th class="pb-2 pr-4" data-i18n="participants">Participants</th>
+                      <th class="pb-2 pr-4" data-i18n="distance">Distance</th>
+                      <th class="pb-2" data-i18n="note">Note</th>
                     </tr>
                   </thead>
                   <tbody id="tripsTableBody" class="divide-y divide-slate-800"></tbody>
                 </table>
               </div>
-              <p id="tripsEmpty" class="hidden py-4 text-sm text-slate-400">No trips logged yet.</p>
+              <p id="tripsEmpty" class="hidden py-4 text-sm text-slate-400" data-i18n="noTripsLogged">No trips logged yet.</p>
             </section>
           </div>
 
           <!-- COSTS TAB -->
           <div id="panel-costs" class="hidden space-y-6">
             <div id="costsTip" class="hidden flex items-start justify-between gap-3 rounded-lg border border-cyan-400/30 bg-cyan-500/10 p-3 text-sm text-cyan-100">
-              <p>Vaste kosten (zoals wegenbelasting) en variabele kosten (zoals tanken) kunnen op elk moment worden ingevoerd.</p>
+              <p data-i18n="costsTip">Vaste kosten (zoals wegenbelasting) en variabele kosten (zoals tanken) kunnen op elk moment worden ingevoerd.</p>
               <button type="button" data-dismiss-tip="costs_tip" class="shrink-0 text-cyan-200 hover:text-white">&times;</button>
             </div>
 
             <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
-              <h2 class="text-lg font-semibold">Add cost</h2>
-              <p class="mb-4 text-sm text-slate-400">A shared expense paid up front by one person.</p>
+              <h2 class="text-lg font-semibold" data-i18n="addCost">Add cost</h2>
+              <p class="mb-4 text-sm text-slate-400" data-i18n="sharedExpense">A shared expense paid up front by one person.</p>
               <p id="costMessage" class="mb-4 hidden rounded-lg border p-3 text-sm"></p>
 
-              <p class="mb-1 block text-sm text-slate-300">Category</p>
+              <p class="mb-1 block text-sm text-slate-300" data-i18n="category">Category</p>
               <div id="categoryPicker" class="mb-4 flex flex-wrap gap-2"></div>
               <p id="categoryError" class="-mt-3 mb-3 text-sm text-red-300"></p>
 
               <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div>
-                  <label class="mb-1 block text-sm text-slate-300" for="costPaidBy">Paid by</label>
+                  <label class="mb-1 block text-sm text-slate-300" for="costPaidBy" data-i18n="paidBy">Paid by</label>
                   <select id="costPaidBy" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></select>
                 </div>
                 <div>
-                  <label class="mb-1 block text-sm text-slate-300" for="costAmount">Amount <span class="text-slate-500">EUR</span></label>
+                  <label class="mb-1 block text-sm text-slate-300" for="costAmount"><span data-i18n="amount">Amount</span> <span class="text-slate-500">EUR</span></label>
                   <input id="costAmount" type="number" min="0.01" step="0.01" placeholder="0.00" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
                   <p id="costAmountError" class="mt-1 text-sm text-red-300"></p>
                 </div>
                 <div>
-                  <label class="mb-1 block text-sm text-slate-300" for="costDate">Date</label>
+                  <label class="mb-1 block text-sm text-slate-300" for="costDate" data-i18n="date">Date</label>
                   <input id="costDate" type="date" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
                 </div>
               </div>
 
-              <label class="mb-1 block text-sm text-slate-300" for="costNotes">Note <span class="text-slate-500">optional</span></label>
+              <label class="mb-1 block text-sm text-slate-300" for="costNotes"><span data-i18n="note">Note</span> <span class="text-slate-500" data-i18n="optional">optional</span></label>
               <textarea id="costNotes" rows="1" placeholder="e.g. Full tank, monthly premium" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
 
-              <button id="logCostButton" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">+ Add cost</button>
+              <label class="mb-1 block text-sm text-slate-300" for="costPhoto"><span data-i18n="receiptPhoto">Receipt photo</span> <span class="text-slate-500" data-i18n="optional">optional</span></label>
+              <input id="costPhoto" type="file" accept="image/*" capture="environment" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm">
+
+              <button id="logCostButton" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">+ <span data-i18n="addCost">Add cost</span></button>
             </section>
 
             <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
               <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-lg font-semibold">Cost history</h2>
+                <h2 class="text-lg font-semibold" data-i18n="costHistory">Cost history</h2>
                 <span id="costsCount" class="text-sm text-slate-400"></span>
               </div>
               <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
+                <table class="w-full min-w-[560px] text-left text-sm">
                   <thead class="text-xs uppercase tracking-wide text-slate-400">
                     <tr>
-                      <th class="pb-2 pr-4">Date</th>
-                      <th class="pb-2 pr-4">Category</th>
-                      <th class="pb-2 pr-4">Paid by</th>
-                      <th class="pb-2 pr-4">Amount</th>
-                      <th class="pb-2">Note</th>
+                      <th class="pb-2 pr-4" data-i18n="date">Date</th>
+                      <th class="pb-2 pr-4" data-i18n="category">Category</th>
+                      <th class="pb-2 pr-4" data-i18n="paidBy">Paid by</th>
+                      <th class="pb-2 pr-4" data-i18n="amount">Amount</th>
+                      <th class="pb-2" data-i18n="note">Note</th>
                     </tr>
                   </thead>
                   <tbody id="costsTableBody" class="divide-y divide-slate-800"></tbody>
                 </table>
               </div>
-              <p id="costsEmpty" class="hidden py-4 text-sm text-slate-400">No costs logged yet.</p>
+              <p id="costsEmpty" class="hidden py-4 text-sm text-slate-400" data-i18n="noCostsLogged">No costs logged yet.</p>
             </section>
           </div>
 
           <!-- DASHBOARD TAB -->
           <div id="panel-dashboard" class="hidden space-y-6">
             <div id="dashboardTip" class="hidden flex items-start justify-between gap-3 rounded-lg border border-cyan-400/30 bg-cyan-500/10 p-3 text-sm text-cyan-100">
-              <p>Hier zie je in één oogopslag wie wat verdiend of nog moet betalen.</p>
+              <p data-i18n="dashboardTip">Hier zie je in één oogopslag wie wat verdiend of nog moet betalen.</p>
               <button type="button" data-dismiss-tip="dashboard_tip" class="shrink-0 text-cyan-200 hover:text-white">&times;</button>
             </div>
 
-            <section>
+            <div class="inline-flex gap-1 rounded-full border border-slate-800 bg-slate-950/60 p-1" id="dashboardScopeToggle">
+              <button type="button" data-scope="group" class="scope-btn rounded-full px-4 py-1.5 text-sm font-medium text-slate-300" data-i18n="group">Group</button>
+              <button type="button" data-scope="personal" class="scope-btn rounded-full px-4 py-1.5 text-sm font-medium text-slate-300" data-i18n="personal">Personal</button>
+            </div>
+
+            <section id="groupBalancesSection">
               <div class="mb-3 flex items-center justify-between">
-                <h2 class="text-lg font-semibold">Balances</h2>
+                <h2 class="text-lg font-semibold" data-i18n="balances">Balances</h2>
                 <span id="memberCount" class="text-sm text-slate-400"></span>
               </div>
-              <div id="balancesGrid" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5"></div>
+              <div id="balancesGrid" class="space-y-3"></div>
+              <button type="button" id="settleUpButton" class="mt-3 w-full rounded-md border border-cyan-500 px-3 py-2 text-sm text-cyan-300 hover:bg-cyan-500/10" data-i18n="settleUp">Settle up</button>
+            </section>
+
+            <section id="personalBalanceSection" class="hidden">
+              <h2 class="mb-3 text-lg font-semibold" data-i18n="yourBalance">Your balance</h2>
+              <div id="personalBalanceCard"></div>
+            </section>
+
+            <section class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
+                <h3 class="mb-3 font-semibold" data-i18n="thisMonth">Deze maand</h3>
+                <dl class="space-y-2 text-sm">
+                  <div class="flex items-center justify-between"><dt class="text-slate-400" data-i18n="kmDriven">Gereden</dt><dd id="monthKm" class="font-medium">—</dd></div>
+                  <div class="flex items-center justify-between"><dt class="text-slate-400" data-i18n="fixedCosts">Vaste lasten</dt><dd id="monthFixed" class="font-medium">—</dd></div>
+                  <div class="flex items-center justify-between"><dt class="text-slate-400" data-i18n="variableCosts">Variabele kosten</dt><dd id="monthFlexible" class="font-medium">—</dd></div>
+                  <div class="flex items-center justify-between"><dt class="text-slate-400" data-i18n="pricePerKm">Prijs per km</dt><dd id="monthRate" class="font-medium">—</dd></div>
+                </dl>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
+                <h3 class="mb-3 font-semibold" data-i18n="allTime">In totaal</h3>
+                <dl class="space-y-2 text-sm">
+                  <div class="flex items-center justify-between"><dt class="text-slate-400" data-i18n="kmDriven">Gereden</dt><dd id="allTimeKm" class="font-medium">—</dd></div>
+                  <div class="flex items-center justify-between"><dt class="text-slate-400" data-i18n="fixedCosts">Vaste lasten</dt><dd id="allTimeFixed" class="font-medium">—</dd></div>
+                  <div class="flex items-center justify-between"><dt class="text-slate-400" data-i18n="variableCosts">Variabele kosten</dt><dd id="allTimeFlexible" class="font-medium">—</dd></div>
+                  <div class="flex items-center justify-between"><dt class="text-slate-400" data-i18n="pricePerKm">Prijs per km</dt><dd id="allTimeRate" class="font-medium">—</dd></div>
+                </dl>
+              </div>
             </section>
 
             <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
               <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-lg font-semibold">All activity</h2>
+                <h2 class="text-lg font-semibold" data-i18n="allActivity">All activity</h2>
                 <span id="activityCount" class="text-sm text-slate-400"></span>
               </div>
               <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
+                <table class="w-full min-w-[620px] text-left text-sm">
                   <thead class="text-xs uppercase tracking-wide text-slate-400">
                     <tr>
-                      <th class="pb-2 pr-4">Date</th>
-                      <th class="pb-2 pr-4">Type</th>
-                      <th class="pb-2 pr-4">Who</th>
-                      <th class="pb-2 pr-4">Details</th>
-                      <th class="pb-2 text-right">Amount</th>
+                      <th class="pb-2 pr-4" data-i18n="date">Date</th>
+                      <th class="pb-2 pr-4" data-i18n="type">Type</th>
+                      <th class="pb-2 pr-4" data-i18n="who">Who</th>
+                      <th class="pb-2 pr-4" data-i18n="details">Details</th>
+                      <th class="pb-2 text-right" data-i18n="amount">Amount</th>
                     </tr>
                   </thead>
                   <tbody id="activityTableBody" class="divide-y divide-slate-800"></tbody>
                 </table>
               </div>
-              <p id="activityEmpty" class="hidden py-4 text-sm text-slate-400">No activity yet.</p>
+              <p id="activityEmpty" class="hidden py-4 text-sm text-slate-400" data-i18n="noActivityYet">No activity yet.</p>
             </section>
           </div>
 
@@ -255,28 +307,133 @@
   </div>
 
   <!-- Floating bottom nav: switches tabs within the active group's workspace -->
-  <nav id="tabNav" class="hidden fixed bottom-4 left-1/2 z-40 -translate-x-1/2 gap-1 rounded-full border border-slate-800 bg-slate-900/95 p-1 shadow-lg shadow-black/40 backdrop-blur">
-    <button type="button" data-tab="trips" class="tab-btn rounded-full px-5 py-2 text-sm font-medium text-slate-300">Trips</button>
-    <button type="button" data-tab="costs" class="tab-btn rounded-full px-5 py-2 text-sm font-medium text-slate-300">Costs</button>
-    <button type="button" data-tab="dashboard" class="tab-btn rounded-full px-5 py-2 text-sm font-medium text-slate-300">Dashboard</button>
+  <nav id="tabNav" class="hidden fixed bottom-4 left-1/2 z-40 w-max -translate-x-1/2 inline-flex items-center gap-1 rounded-full border border-slate-800 bg-slate-900/95 p-1 shadow-lg shadow-black/40 backdrop-blur">
+    <button type="button" data-tab="trips" class="tab-btn rounded-full px-5 py-2 text-sm font-medium text-slate-300" data-i18n="trips">Trips</button>
+    <button type="button" data-tab="costs" class="tab-btn rounded-full px-5 py-2 text-sm font-medium text-slate-300" data-i18n="costs">Costs</button>
+    <button type="button" data-tab="dashboard" class="tab-btn rounded-full px-5 py-2 text-sm font-medium text-slate-300" data-i18n="dashboard">Dashboard</button>
   </nav>
 
   <div id="groupActionModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 p-4">
     <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
-      <h3 class="mb-4 text-lg font-semibold">Add a group</h3>
-      <button id="goCreateGroup" class="mb-3 w-full rounded-lg border border-cyan-400/60 bg-cyan-500/20 px-4 py-3 text-left hover:bg-cyan-500/30">
+      <h3 class="mb-4 text-lg font-semibold" data-i18n="addAGroup">Add a group</h3>
+      <button id="goCreateGroup" class="mb-3 w-full rounded-lg border border-cyan-400/60 bg-cyan-500/20 px-4 py-3 text-left hover:bg-cyan-500/30" data-i18n="createGroup">
         Create a shared car group
       </button>
-      <button id="joinGroup" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-left hover:bg-slate-700">
+      <button id="joinGroup" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-left hover:bg-slate-700" data-i18n="joinGroup">
         Join an existing group
       </button>
-      <button id="closeModal" class="mt-4 w-full rounded-lg border border-slate-700 px-4 py-2 text-slate-300">Cancel</button>
+      <button id="closeModal" class="mt-4 w-full rounded-lg border border-slate-700 px-4 py-2 text-slate-300" data-i18n="cancel">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Bottom sheet: trip / cost / balance / settle-up detail -->
+  <div id="sheetOverlay" class="fixed inset-0 z-50 hidden bg-slate-950/70">
+    <div id="bottomSheet" class="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl border-t border-slate-800 bg-slate-900 p-5 pb-8">
+      <div class="mb-4 flex items-center justify-between gap-3">
+        <h3 id="sheetTitle" class="text-lg font-semibold"></h3>
+        <div class="flex shrink-0 items-center gap-2">
+          <button type="button" id="sheetEditButton" class="hidden rounded-md border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800" data-i18n="edit">Edit</button>
+          <button type="button" id="sheetCloseButton" class="rounded-md border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800" data-i18n="close">Close</button>
+        </div>
+      </div>
+      <div id="sheetBody"></div>
     </div>
   </div>
 
   <script>
-    const CATEGORIES = ['Insurance', 'Tax', 'Depreciation'];
+    const CATEGORIES = ['Car insurance', 'Road tax', 'Parking permit', 'Fixed depreciation'];
     const AVATAR_COLORS = ['bg-cyan-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-rose-500', 'bg-blue-500'];
+
+    // ---------- Language ----------
+
+    const TRANSLATIONS = {
+      en: {
+        yourGroups: 'Your groups', welcome: 'Welcome', trackShared: 'Track shared car usage and keep costs fair across your group.',
+        insuranceBanner: "Don't want to be the one stuck with damage someone else caused? There's insurance for shared car use.",
+        moreInfo: 'More info', noGroupsYet: 'No car-sharing groups yet', openMenu: 'Open the menu to create or join a group.',
+        startWithMenu: 'Start with the menu', unableToLoadDashboard: 'Unable to load dashboard.', retry: 'Retry',
+        groupSettings: 'Group settings', loading: 'Loading...', unableToLoadGroup: 'Unable to load this group right now.',
+        currentOdometer: 'Current odometer', lastTrip: 'Last trip', hasTheKey: 'Has the key',
+        tripsTip: "Enter the total odometer reading for every trip — not the daily distance. Nothing to fill in again at the end of the trip.",
+        addTrip: 'Add trip', date: 'Date', participants: 'Participants', startOdometer: 'Start odometer', endOdometer: 'End odometer',
+        odometerPhoto: 'Odometer photo', optional: 'optional', note: 'Note', whatWasTripFor: 'What was the trip for?',
+        tripHistory: 'Trip history', distance: 'Distance', noTripsLogged: 'No trips logged yet.',
+        costsTip: 'Fixed costs (like road tax) and variable costs (like fuel) can be entered anytime.',
+        addCost: 'Add cost', sharedExpense: 'A shared expense paid up front by one person.', category: 'Category',
+        paidBy: 'Paid by', amount: 'Amount', receiptPhoto: 'Receipt photo', costHistory: 'Cost history',
+        type: 'Type', noCostsLogged: 'No costs logged yet.',
+        dashboardTip: 'Here you can see at a glance who earned what or still needs to pay.',
+        group: 'Group', personal: 'Personal', balances: 'Balances', settleUp: 'Settle up', yourBalance: 'Your balance',
+        thisMonth: 'This month', allTime: 'All time', kmDriven: 'Km driven', fixedCosts: 'Fixed costs',
+        variableCosts: 'Variable costs', pricePerKm: 'Price per km', allActivity: 'All activity', who: 'Who',
+        details: 'Details', noActivityYet: 'No activity yet.', trips: 'Trips', costs: 'Costs', dashboard: 'Dashboard',
+        addAGroup: 'Add a group', createGroup: 'Create a shared car group', joinGroup: 'Join an existing group',
+        cancel: 'Cancel', edit: 'Edit', close: 'Close', tripDetails: 'Trip details', distanceDriven: 'Distance driven',
+        filledIn: 'Filled in', price: 'Price', filledInBy: 'Filled in by', notes: 'Notes', photo: 'Photo',
+        editTrip: 'Edit trip', save: 'Save', costDetails: 'Cost details', receipt: 'Receipt',
+        noReceiptAdded: 'No receipt photo added. Use Edit to add one.', editCost: 'Edit cost',
+        totalTripCosts: 'Total trip costs', fixedCostShare: 'Fixed cost share', totalYouPaid: 'Total you paid',
+        everyoneSettled: 'Everyone is settled up — nothing to transfer.',
+        settleUpFootnote: 'SHARIT keeps track of who owes what — settling up happens outside the app, however your group prefers.',
+        gets: 'gets back', owes: 'owes', settled: 'settled up', role: 'Role', estimated: 'estimated', confirmed: 'confirmed', edited: 'edited',
+        addReceiptPhoto: 'Add receipt photo', replaceReceiptPhoto: 'Replace receipt photo', saving: 'Saving...', you: 'You',
+        owner: 'owner', member: 'member',
+      },
+      nl: {
+        yourGroups: 'Jouw groepen', welcome: 'Welkom', trackShared: 'Houd gedeeld autogebruik bij en verdeel kosten eerlijk binnen je groep.',
+        insuranceBanner: 'Niet de pineut zijn als iemand anders schade rijdt? Er zijn verzekeringen voor gedeeld autogebruik.',
+        moreInfo: 'Meer info', noGroupsYet: 'Nog geen deelauto-groepen', openMenu: 'Open het menu om een groep te maken of deel te nemen.',
+        startWithMenu: 'Begin met het menu', unableToLoadDashboard: 'Dashboard kon niet worden geladen.', retry: 'Opnieuw',
+        groupSettings: 'Groepsinstellingen', loading: 'Laden...', unableToLoadGroup: 'Deze groep kon nu niet worden geladen.',
+        currentOdometer: 'Huidige kilometerstand', lastTrip: 'Laatste rit', hasTheKey: 'Heeft de sleutel',
+        tripsTip: 'Voer bij elke rit de totale kilometerstand in — niet de dagstand. Aan het einde van de rit hoef je niets opnieuw in te vullen.',
+        addTrip: 'Rit toevoegen', date: 'Datum', participants: 'Deelnemers', startOdometer: 'Beginstand', endOdometer: 'Eindstand',
+        odometerPhoto: 'Foto kilometerteller', optional: 'optioneel', note: 'Notitie', whatWasTripFor: 'Waar was de rit voor?',
+        tripHistory: 'Ritgeschiedenis', distance: 'Afstand', noTripsLogged: 'Nog geen ritten gelogd.',
+        costsTip: 'Vaste kosten (zoals wegenbelasting) en variabele kosten (zoals tanken) kunnen op elk moment worden ingevoerd.',
+        addCost: 'Kosten toevoegen', sharedExpense: 'Een gedeelde uitgave die door één persoon is voorgeschoten.', category: 'Categorie',
+        paidBy: 'Betaald door', amount: 'Bedrag', receiptPhoto: 'Bonfoto', costHistory: 'Kostengeschiedenis',
+        type: 'Soort', noCostsLogged: 'Nog geen kosten gelogd.',
+        dashboardTip: 'Hier zie je in één oogopslag wie wat verdiend of nog moet betalen.',
+        group: 'Groep', personal: 'Persoonlijk', balances: 'Saldi', settleUp: 'Vereffenen', yourBalance: 'Jouw saldo',
+        thisMonth: 'Deze maand', allTime: 'In totaal', kmDriven: 'Gereden', fixedCosts: 'Vaste lasten',
+        variableCosts: 'Variabele kosten', pricePerKm: 'Prijs per km', allActivity: 'Alle activiteit', who: 'Wie',
+        details: 'Details', noActivityYet: 'Nog geen activiteit.', trips: 'Ritten', costs: 'Kosten', dashboard: 'Dashboard',
+        addAGroup: 'Groep toevoegen', createGroup: 'Maak een deelauto-groep', joinGroup: 'Neem deel aan een bestaande groep',
+        cancel: 'Annuleren', edit: 'Bewerken', close: 'Sluiten', tripDetails: 'Ritdetails', distanceDriven: 'Afgelegde afstand',
+        filledIn: 'Ingevuld op', price: 'Prijs', filledInBy: 'Ingevuld door', notes: 'Notities', photo: 'Foto',
+        editTrip: 'Rit bewerken', save: 'Opslaan', costDetails: 'Kostendetails', receipt: 'Bon',
+        noReceiptAdded: 'Nog geen bonfoto toegevoegd. Gebruik Bewerken om er een toe te voegen.', editCost: 'Kosten bewerken',
+        totalTripCosts: 'Totale ritkosten', fixedCostShare: 'Aandeel vaste kosten', totalYouPaid: 'Totaal door jou betaald',
+        everyoneSettled: 'Iedereen is vereffend — niets te verrekenen.',
+        settleUpFootnote: 'SHARIT houdt bij wie wat schuldig is — vereffenen gebeurt buiten de app, zoals jullie groep dat wil.',
+        gets: 'krijgt terug', owes: 'moet bijleggen', settled: 'vereffend', role: 'Rol', estimated: 'geschat', confirmed: 'bevestigd', edited: 'bewerkt',
+        addReceiptPhoto: 'Bonfoto toevoegen', replaceReceiptPhoto: 'Bonfoto vervangen', saving: 'Bezig met opslaan...', you: 'Jij',
+        owner: 'eigenaar', member: 'lid',
+      },
+    };
+
+    function resolveLanguage() {
+      const stored = window.localStorage.getItem('sharit_language') || 'system';
+      if (stored === 'en' || stored === 'nl') return stored;
+      return (navigator.language || '').toLowerCase().startsWith('nl') ? 'nl' : 'en';
+    }
+
+    const LANG = resolveLanguage();
+
+    function t(key) {
+      return (TRANSLATIONS[LANG] && TRANSLATIONS[LANG][key]) || TRANSLATIONS.en[key] || key;
+    }
+
+    function applyStaticTranslations() {
+      document.querySelectorAll('[data-i18n]').forEach((el) => {
+        el.textContent = t(el.dataset.i18n);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+        el.placeholder = t(el.dataset.i18nPlaceholder);
+      });
+      document.documentElement.lang = LANG;
+    }
 
     function getSessionToken() {
       return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
@@ -304,6 +461,9 @@
       costsLoaded: false,
       balances: [],
       activity: [],
+      summary: null,
+      personalSummary: null,
+      dashboardScope: 'group',
       dashboardLoaded: false,
       selectedParticipantIds: new Set(),
       selectedCategory: CATEGORIES[0],
@@ -318,6 +478,7 @@
       errorState: document.getElementById('dashboardErrorState'),
       errorMessage: document.getElementById('dashboardErrorMessage'),
       retryButton: document.getElementById('retryDashboard'),
+      accountButton: document.getElementById('accountButton'),
       accountName: document.getElementById('accountName'),
       accountAvatar: document.getElementById('accountAvatar'),
       welcomeTitle: document.getElementById('welcomeTitle'),
@@ -325,12 +486,16 @@
       dismissInsuranceBanner: document.getElementById('dismissInsuranceBanner'),
       insuranceMoreInfo: document.getElementById('insuranceMoreInfo'),
       addButton: document.getElementById('addGroupButton'),
-      logoutButton: document.getElementById('logoutButton'),
       menuCue: document.getElementById('menuCue'),
       modal: document.getElementById('groupActionModal'),
       closeModal: document.getElementById('closeModal'),
       goCreateGroup: document.getElementById('goCreateGroup'),
       joinGroup: document.getElementById('joinGroup'),
+      sheetOverlay: document.getElementById('sheetOverlay'),
+      sheetTitle: document.getElementById('sheetTitle'),
+      sheetBody: document.getElementById('sheetBody'),
+      sheetEditButton: document.getElementById('sheetEditButton'),
+      sheetCloseButton: document.getElementById('sheetCloseButton'),
 
       workspaceSection: document.getElementById('workspaceSection'),
       activeGroupName: document.getElementById('activeGroupName'),
@@ -351,12 +516,18 @@
       tripsTip: document.getElementById('tripsTip'),
       costsTip: document.getElementById('costsTip'),
       dashboardTip: document.getElementById('dashboardTip'),
+      lastTripCard: document.getElementById('lastTripCard'),
+      lastTripOdometer: document.getElementById('lastTripOdometer'),
+      lastTripDate: document.getElementById('lastTripDate'),
+      lastTripParticipants: document.getElementById('lastTripParticipants'),
+      odometerStart: document.getElementById('odometerStart'),
+      odometerStartError: document.getElementById('odometerStartError'),
+      odometerStartMinHint: document.getElementById('odometerStartMinHint'),
+      odometerEnd: document.getElementById('odometerEnd'),
+      odometerEndError: document.getElementById('odometerEndError'),
       tripDate: document.getElementById('tripDate'),
       participantPicker: document.getElementById('participantPicker'),
       participantsError: document.getElementById('participantsError'),
-      odometerReading: document.getElementById('odometerReading'),
-      odometerReadingError: document.getElementById('odometerReadingError'),
-      odometerMinHint: document.getElementById('odometerMinHint'),
       tripPhoto: document.getElementById('tripPhoto'),
       tripNotes: document.getElementById('tripNotes'),
       logTripButton: document.getElementById('logTripButton'),
@@ -371,6 +542,7 @@
       costAmountError: document.getElementById('costAmountError'),
       costDate: document.getElementById('costDate'),
       costNotes: document.getElementById('costNotes'),
+      costPhoto: document.getElementById('costPhoto'),
       logCostButton: document.getElementById('logCostButton'),
       costMessage: document.getElementById('costMessage'),
       costsCount: document.getElementById('costsCount'),
@@ -378,6 +550,10 @@
       costsEmpty: document.getElementById('costsEmpty'),
       memberCount: document.getElementById('memberCount'),
       balancesGrid: document.getElementById('balancesGrid'),
+      groupBalancesSection: document.getElementById('groupBalancesSection'),
+      personalBalanceSection: document.getElementById('personalBalanceSection'),
+      personalBalanceCard: document.getElementById('personalBalanceCard'),
+      settleUpButton: document.getElementById('settleUpButton'),
       activityCount: document.getElementById('activityCount'),
       activityTableBody: document.getElementById('activityTableBody'),
       activityEmpty: document.getElementById('activityEmpty'),
@@ -439,6 +615,13 @@
       return `${d}-${m}-${y}`;
     }
 
+    function formatDateTime(isoTimestamp) {
+      if (!isoTimestamp) return '—';
+      const d = new Date(isoTimestamp);
+      if (Number.isNaN(d.getTime())) return '—';
+      return `${d.toLocaleDateString('nl-NL')} ${d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
     function initials(name) {
       const parts = (name || 'Member').trim().split(/\s+/);
       const first = parts[0] ? parts[0][0] : 'M';
@@ -465,6 +648,301 @@
       el.classList.remove('hidden');
     }
 
+    // ---------- Bottom sheet ----------
+
+    function openSheet(title, bodyHtml, onEdit) {
+      els.sheetTitle.textContent = title;
+      els.sheetBody.innerHTML = bodyHtml;
+      els.sheetEditButton.classList.toggle('hidden', !onEdit);
+      els.sheetEditButton.onclick = onEdit || null;
+      els.sheetOverlay.classList.remove('hidden');
+    }
+
+    function closeSheet() {
+      els.sheetOverlay.classList.add('hidden');
+      els.sheetBody.innerHTML = '';
+      els.sheetEditButton.onclick = null;
+    }
+
+    els.sheetCloseButton.addEventListener('click', closeSheet);
+    els.sheetOverlay.addEventListener('click', (event) => {
+      if (event.target === els.sheetOverlay) closeSheet();
+    });
+
+    function detailRow(label, valueHtml) {
+      return `
+        <div>
+          <p class="text-xs uppercase tracking-wide text-slate-400">${label}</p>
+          <p class="mt-0.5 font-medium">${valueHtml}</p>
+        </div>
+      `;
+    }
+
+    // ---------- Trip detail sheet ----------
+
+    function openTripSheet(trip) {
+      renderTripSheetView(trip);
+    }
+
+    function renderTripSheetView(trip) {
+      const participantAvatars = (trip.participants || []).map((p) => avatarBadge(p.userId, p.name)).join('');
+      const participantNames = (trip.participants || []).map((p) => p.name).join(' & ') || '—';
+
+      const body = `
+        <div class="space-y-4 text-sm">
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400">${t('distanceDriven')}</p>
+            <p class="mt-0.5 text-lg font-semibold">${formatOdometer(trip.odometerStart)} &rarr; ${formatOdometer(trip.odometerEnd)} <span class="text-slate-400">(${formatKm(trip.distanceKm)})</span></p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400">${t('participants')}</p>
+            <div class="mt-1 flex items-center gap-2"><div class="flex -space-x-1">${participantAvatars}</div><span>${participantNames}</span></div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            ${detailRow(t('date'), formatDate(trip.tripDate))}
+            ${detailRow(t('filledIn'), formatDateTime(trip.createdAt))}
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            ${detailRow(t('price'), formatCurrency(trip.cost))}
+            ${detailRow(t('filledInBy'), trip.loggedByName || '—')}
+          </div>
+          ${trip.photoUrl ? `<div><p class="text-xs uppercase tracking-wide text-slate-400">${t('photo')}</p><img src="${trip.photoUrl}" class="mt-1 max-h-56 w-full rounded-lg border border-slate-700 object-cover"></div>` : ''}
+          ${detailRow(t('notes'), trip.notes || '—')}
+        </div>
+      `;
+      openSheet(t('tripDetails'), body, () => renderTripSheetEdit(trip));
+    }
+
+    function renderTripSheetEdit(trip) {
+      els.sheetTitle.textContent = t('editTrip');
+      els.sheetEditButton.classList.add('hidden');
+      els.sheetBody.innerHTML = `
+        <div class="space-y-3 text-sm">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="mb-1 block text-slate-300" for="sheetTripStart">${t('startOdometer')}</label>
+              <input id="sheetTripStart" type="number" min="0" step="0.1" value="${trip.odometerStart ?? ''}" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+            </div>
+            <div>
+              <label class="mb-1 block text-slate-300" for="sheetTripEnd">${t('endOdometer')}</label>
+              <input id="sheetTripEnd" type="number" min="0" step="0.1" value="${trip.odometerEnd ?? ''}" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+            </div>
+          </div>
+          <div>
+            <label class="mb-1 block text-slate-300" for="sheetTripNotes">${t('notes')}</label>
+            <textarea id="sheetTripNotes" rows="2" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">${trip.notes || ''}</textarea>
+          </div>
+          <p id="sheetTripError" class="text-sm text-red-300"></p>
+          <div class="flex gap-2 pt-1">
+            <button type="button" id="sheetTripSave" class="flex-1 rounded-md bg-cyan-500 px-4 py-2 font-semibold text-slate-900">${t('save')}</button>
+            <button type="button" id="sheetTripCancel" class="flex-1 rounded-md border border-slate-700 px-4 py-2 text-slate-200">${t('cancel')}</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('sheetTripCancel').addEventListener('click', () => renderTripSheetView(trip));
+      document.getElementById('sheetTripSave').addEventListener('click', async () => {
+        const errorEl = document.getElementById('sheetTripError');
+        errorEl.textContent = '';
+        try {
+          await fetchJson(`/api/groups/${encodeURIComponent(state.activeGroupId)}/trips/${encodeURIComponent(trip.id)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              odometerStart: Number(document.getElementById('sheetTripStart').value),
+              odometerEnd: Number(document.getElementById('sheetTripEnd').value),
+              notes: document.getElementById('sheetTripNotes').value,
+            }),
+          });
+          closeSheet();
+          state.dashboardLoaded = false;
+          await loadTrips();
+        } catch (error) {
+          errorEl.textContent = error.message || 'Could not save changes right now.';
+        }
+      });
+    }
+
+    // ---------- Cost detail sheet ----------
+
+    function openCostSheet(cost) {
+      renderCostSheetView(cost);
+    }
+
+    function renderCostSheetView(cost) {
+      const photoBlock = cost.photoUrl
+        ? `<div><p class="text-xs uppercase tracking-wide text-slate-400">${t('receipt')}</p><img src="${cost.photoUrl}" class="mt-1 max-h-56 w-full rounded-lg border border-slate-700 object-cover"></div>`
+        : `<p class="text-sm text-slate-400">${t('noReceiptAdded')}</p>`;
+
+      const body = `
+        <div class="space-y-4 text-sm">
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400">${t('amount')}</p>
+            <p class="mt-0.5 text-lg font-semibold">${formatCurrency(cost.amount)}</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400">${t('paidBy')}</p>
+            <div class="mt-1 flex items-center gap-2">${avatarBadge(cost.paidBy, cost.paidByName)}<span>${cost.paidByName}</span></div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            ${detailRow(t('date'), formatDate(cost.costDate))}
+            ${detailRow(t('type'), cost.category || '—')}
+          </div>
+          ${photoBlock}
+          ${detailRow(t('notes'), cost.notes || '—')}
+        </div>
+      `;
+      openSheet(t('costDetails'), body, () => renderCostSheetEdit(cost));
+    }
+
+    function renderCostSheetEdit(cost) {
+      els.sheetTitle.textContent = t('editCost');
+      els.sheetEditButton.classList.add('hidden');
+      const categoryOptions = CATEGORIES.map(
+        (c) => `<option value="${c}" ${cost.category === c ? 'selected' : ''}>${c}</option>`
+      ).join('');
+      els.sheetBody.innerHTML = `
+        <div class="space-y-3 text-sm">
+          <div>
+            <label class="mb-1 block text-slate-300" for="sheetCostCategory">${t('type')}</label>
+            <select id="sheetCostCategory" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">${categoryOptions}</select>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="mb-1 block text-slate-300" for="sheetCostAmount">${t('amount')}</label>
+              <input id="sheetCostAmount" type="number" min="0.01" step="0.01" value="${cost.amount ?? ''}" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+            </div>
+            <div>
+              <label class="mb-1 block text-slate-300" for="sheetCostDate">${t('date')}</label>
+              <input id="sheetCostDate" type="date" value="${cost.costDate || ''}" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+            </div>
+          </div>
+          <div>
+            <label class="mb-1 block text-slate-300" for="sheetCostNotes">${t('notes')}</label>
+            <textarea id="sheetCostNotes" rows="2" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">${cost.notes || ''}</textarea>
+          </div>
+          <div>
+            <label class="mb-1 block text-slate-300" for="sheetCostPhoto">${cost.photoUrl ? t('replaceReceiptPhoto') : t('addReceiptPhoto')}</label>
+            <input id="sheetCostPhoto" type="file" accept="image/*" capture="environment" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm">
+          </div>
+          <p id="sheetCostError" class="text-sm text-red-300"></p>
+          <div class="flex gap-2 pt-1">
+            <button type="button" id="sheetCostSave" class="flex-1 rounded-md bg-cyan-500 px-4 py-2 font-semibold text-slate-900">${t('save')}</button>
+            <button type="button" id="sheetCostCancel" class="flex-1 rounded-md border border-slate-700 px-4 py-2 text-slate-200">${t('cancel')}</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('sheetCostCancel').addEventListener('click', () => renderCostSheetView(cost));
+      document.getElementById('sheetCostSave').addEventListener('click', async () => {
+        const errorEl = document.getElementById('sheetCostError');
+        errorEl.textContent = '';
+        try {
+          const formData = new FormData();
+          formData.append('category', document.getElementById('sheetCostCategory').value);
+          formData.append('amount', document.getElementById('sheetCostAmount').value);
+          formData.append('costDate', document.getElementById('sheetCostDate').value);
+          formData.append('notes', document.getElementById('sheetCostNotes').value);
+          const photoFile = document.getElementById('sheetCostPhoto').files[0];
+          if (photoFile) formData.append('photo', photoFile);
+
+          await fetchJson(`/api/groups/${encodeURIComponent(state.activeGroupId)}/costs/${encodeURIComponent(cost.id)}`, {
+            method: 'PATCH',
+            body: formData,
+          });
+          closeSheet();
+          state.dashboardLoaded = false;
+          await loadCosts();
+        } catch (error) {
+          errorEl.textContent = error.message || 'Could not save changes right now.';
+        }
+      });
+    }
+
+    // ---------- Balance detail sheet ----------
+
+    function openBalanceSheet() {
+      if (!state.personalSummary) return;
+      const totalPaid = state.costs
+        .filter((c) => c.paidBy === state.currentUserId)
+        .reduce((sum, c) => sum + Number(c.amount || 0), 0);
+      const stats = state.personalSummary.allTime;
+      const balance = state.personalSummary.balance || 0;
+      const balanceColor = balance > 0.005 ? 'text-emerald-400' : balance < -0.005 ? 'text-rose-400' : 'text-slate-300';
+      const balanceSign = balance > 0.005 ? '+' : '';
+
+      const body = `
+        <div class="space-y-4 text-sm">
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400">${t('yourBalance')}</p>
+            <p class="mt-0.5 text-2xl font-semibold ${balanceColor}">${balanceSign}${formatCurrency(balance)}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            ${detailRow(t('kmDriven'), formatKm(stats.kmDriven))}
+            ${detailRow(t('totalTripCosts'), formatCurrency(stats.flexibleCosts))}
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            ${detailRow(t('fixedCostShare'), formatCurrency(stats.fixedCosts))}
+            ${detailRow(t('totalYouPaid'), formatCurrency(totalPaid))}
+          </div>
+        </div>
+      `;
+      openSheet(t('yourBalance'), body, null);
+    }
+
+    // ---------- Settle-up sheet ----------
+
+    function computeSettlements(balances) {
+      const creditors = balances
+        .filter((b) => b.balance > 0.005)
+        .map((b) => ({ ...b }))
+        .sort((a, b) => b.balance - a.balance);
+      const debtors = balances
+        .filter((b) => b.balance < -0.005)
+        .map((b) => ({ ...b, balance: -b.balance }))
+        .sort((a, b) => b.balance - a.balance);
+
+      const transfers = [];
+      let i = 0;
+      let j = 0;
+      while (i < debtors.length && j < creditors.length) {
+        const amount = Math.min(debtors[i].balance, creditors[j].balance);
+        transfers.push({ from: debtors[i], to: creditors[j], amount });
+        debtors[i].balance -= amount;
+        creditors[j].balance -= amount;
+        if (debtors[i].balance < 0.005) i += 1;
+        if (creditors[j].balance < 0.005) j += 1;
+      }
+      return transfers;
+    }
+
+    function openSettleUpSheet() {
+      const transfers = computeSettlements(state.balances);
+      if (!transfers.length) {
+        openSheet(t('settleUp'), `<p class="text-sm text-slate-400">${t('everyoneSettled')}</p>`, null);
+        return;
+      }
+
+      const rows = transfers.map((transfer) => {
+        const isMeDebtor = transfer.from.userId === state.currentUserId;
+        const isMeCreditor = transfer.to.userId === state.currentUserId;
+        let sentence;
+        if (isMeDebtor) {
+          sentence = `Hey ${transfer.from.name}, you owe <strong>${transfer.to.name}</strong> ${formatCurrency(transfer.amount)}`;
+        } else if (isMeCreditor) {
+          sentence = `Hey ${transfer.to.name}, you get ${formatCurrency(transfer.amount)} from <strong>${transfer.from.name}</strong>`;
+        } else {
+          sentence = `${transfer.from.name} ${t('owes')} ${transfer.to.name} <strong>${formatCurrency(transfer.amount)}</strong>`;
+        }
+        return `
+          <div class="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-950/60 p-3">
+            <div class="flex -space-x-1">${avatarBadge(transfer.from.userId, transfer.from.name)}${avatarBadge(transfer.to.userId, transfer.to.name)}</div>
+            <p class="text-sm">${sentence}</p>
+          </div>
+        `;
+      }).join('');
+
+      openSheet(t('settleUp'), `<div class="space-y-2">${rows}</div><p class="mt-4 text-xs text-slate-500">${t('settleUpFootnote')}</p>`, null);
+    }
+
     // ---------- Groups drawer ----------
 
     function renderGroups() {
@@ -485,12 +963,32 @@
       state.groups.forEach((group) => {
         const li = document.createElement('li');
         const isActive = group.id === state.activeGroupId;
-        li.className = `rounded-lg border p-3 ${isActive ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 bg-slate-900/50'}`;
-        li.innerHTML = `
-          <p class="font-medium">${group.name}</p>
-          <p class="text-xs text-slate-400">Role: ${group.role || 'member'}</p>
+        li.className = `flex items-center justify-between gap-2 rounded-lg border p-3 ${isActive ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 bg-slate-900/50'}`;
+
+        const info = document.createElement('button');
+        info.type = 'button';
+        info.className = 'min-w-0 flex-1 text-left';
+        info.innerHTML = `
+          <p class="truncate font-medium">${group.name}</p>
+          <p class="text-xs text-slate-400">${t('role')}: ${t(group.role === 'owner' ? 'owner' : 'member')}</p>
         `;
-        li.addEventListener('click', () => switchActiveGroup(group.id));
+        info.addEventListener('click', () => switchActiveGroup(group.id));
+        li.appendChild(info);
+
+        const settingsLink = document.createElement('a');
+        settingsLink.href = `/groups/${encodeURIComponent(group.id)}/settings`;
+        settingsLink.title = 'Group settings';
+        settingsLink.setAttribute('aria-label', `Settings for ${group.name}`);
+        settingsLink.className = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 hover:bg-slate-800 hover:text-slate-100';
+        settingsLink.innerHTML = `
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+        `;
+        settingsLink.addEventListener('click', (event) => event.stopPropagation());
+        li.appendChild(settingsLink);
+
         els.groupsList.appendChild(li);
       });
 
@@ -559,6 +1057,15 @@
 
     els.tabButtons.forEach((btn) => btn.addEventListener('click', () => setActiveTab(btn.dataset.tab)));
 
+    document.querySelectorAll('.scope-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.dashboardScope = btn.dataset.scope;
+        renderDashboardScope();
+      });
+    });
+
+    els.settleUpButton.addEventListener('click', openSettleUpSheet);
+
     // ---------- Members / pickers ----------
 
     function renderParticipantPicker() {
@@ -610,27 +1117,51 @@
 
     // ---------- Trips ----------
 
+    function renderLastTripCard() {
+      const latest = state.trips[0];
+      if (!latest) {
+        els.lastTripCard.classList.add('hidden');
+        return;
+      }
+      els.lastTripCard.classList.remove('hidden');
+      els.lastTripOdometer.textContent = latest.odometerEnd !== null && latest.odometerEnd !== undefined
+        ? `${formatOdometer(latest.odometerEnd)} km`
+        : '—';
+      els.lastTripDate.textContent = formatDate(latest.tripDate) || '—';
+      const names = (latest.participants || []).map((p) => p.name);
+      els.lastTripParticipants.textContent = names.length ? names.join(' & ') : '—';
+    }
+
     function renderTrips() {
       els.tripsCount.textContent = state.trips.length ? `${state.trips.length} trip${state.trips.length === 1 ? '' : 's'}` : '';
       els.tripsEmpty.classList.toggle('hidden', state.trips.length > 0);
       els.tripsTableBody.innerHTML = '';
 
       const latest = state.trips[0];
-      els.odometerMinHint.textContent = latest ? `min ${formatOdometer(latest.odometerReading)}` : '';
+      const hint = latest && latest.odometerEnd !== null && latest.odometerEnd !== undefined
+        ? `min ${formatOdometer(latest.odometerEnd)}`
+        : '';
+      els.odometerStartMinHint.textContent = hint;
+      renderLastTripCard();
 
       state.trips.forEach((trip) => {
         const tr = document.createElement('tr');
+        tr.className = 'cursor-pointer hover:bg-slate-800/40';
         const who = (trip.participants || []).map((p) => p.name).join(' & ') || '—';
         const whoAvatars = (trip.participants || []).slice(0, 3).map((p) => avatarBadge(p.userId, p.name)).join('');
         const calibrationBadge = trip.provisional
-          ? '<span class="ml-2 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs text-amber-300">estimated</span>'
-          : '<span class="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-300">confirmed</span>';
+          ? `<span class="ml-2 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs text-amber-300">${t('estimated')}</span>`
+          : `<span class="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-300">${t('confirmed')}</span>`;
+
+        const distanceCell = `${formatOdometer(trip.odometerStart)} &rarr; ${formatOdometer(trip.odometerEnd)}`;
+
         tr.innerHTML = `
           <td class="py-2 pr-4 whitespace-nowrap">${formatDate(trip.tripDate)}</td>
           <td class="py-2 pr-4"><div class="flex items-center gap-2"><div class="flex -space-x-1">${whoAvatars}</div><span class="text-slate-300">${who}</span></div></td>
-          <td class="py-2 pr-4 whitespace-nowrap">${formatOdometer(trip.odometerReading)}${calibrationBadge}</td>
-          <td class="py-2 text-slate-400">${trip.notes || '—'}${trip.editedAt ? ' <span class="text-amber-300">(edited)</span>' : ''}</td>
+          <td class="py-2 pr-4 whitespace-nowrap">${distanceCell}${calibrationBadge}</td>
+          <td class="py-2 text-slate-400">${trip.notes || '—'}${trip.editedAt ? ` <span class="text-amber-300">(${t('edited')})</span>` : ''}</td>
         `;
+        tr.addEventListener('click', () => openTripSheet(trip));
         els.tripsTableBody.appendChild(tr);
       });
     }
@@ -644,7 +1175,8 @@
     }
 
     async function logTrip(confirmLargeDistance = false) {
-      els.odometerReadingError.textContent = '';
+      els.odometerStartError.textContent = '';
+      els.odometerEndError.textContent = '';
       els.participantsError.textContent = '';
       els.tripMessage.classList.add('hidden');
 
@@ -654,23 +1186,26 @@
       }
 
       els.logTripButton.disabled = true;
-      els.logTripButton.textContent = 'Saving...';
+      els.logTripButton.textContent = t('saving');
 
       try {
         const formData = new FormData();
-        formData.append('odometerReading', els.odometerReading.value);
         if (els.tripDate.value) formData.append('tripDate', els.tripDate.value);
         if (els.tripNotes.value) formData.append('notes', els.tripNotes.value);
-        if (els.tripPhoto.files[0]) formData.append('photo', els.tripPhoto.files[0]);
         if (confirmLargeDistance) formData.append('confirmLargeDistance', 'true');
         state.selectedParticipantIds.forEach((id) => formData.append('participantIds', id));
+
+        formData.append('odometerStart', els.odometerStart.value);
+        formData.append('odometerEnd', els.odometerEnd.value);
+        if (els.tripPhoto.files[0]) formData.append('photo', els.tripPhoto.files[0]);
 
         await fetchJson(`/api/groups/${encodeURIComponent(state.activeGroupId)}/trips`, {
           method: 'POST',
           body: formData,
         });
 
-        els.odometerReading.value = '';
+        els.odometerStart.value = '';
+        els.odometerEnd.value = '';
         els.tripPhoto.value = '';
         els.tripNotes.value = '';
         state.selectedParticipantIds.clear();
@@ -684,8 +1219,10 @@
             await logTrip(true);
             return;
           }
-        } else if (error.fieldErrors && error.fieldErrors.odometerReading) {
-          els.odometerReadingError.textContent = error.fieldErrors.odometerReading;
+        } else if (error.fieldErrors && error.fieldErrors.odometerStart) {
+          els.odometerStartError.textContent = error.fieldErrors.odometerStart;
+        } else if (error.fieldErrors && error.fieldErrors.odometerEnd) {
+          els.odometerEndError.textContent = error.fieldErrors.odometerEnd;
         } else if (error.fieldErrors && error.fieldErrors.participantIds) {
           els.participantsError.textContent = error.fieldErrors.participantIds;
         } else {
@@ -693,7 +1230,7 @@
         }
       } finally {
         els.logTripButton.disabled = false;
-        els.logTripButton.textContent = '+ Add trip';
+        els.logTripButton.textContent = `+ ${t('addTrip')}`;
       }
     }
 
@@ -706,13 +1243,15 @@
 
       state.costs.forEach((cost) => {
         const tr = document.createElement('tr');
+        tr.className = 'cursor-pointer hover:bg-slate-800/40';
         tr.innerHTML = `
           <td class="py-2 pr-4 whitespace-nowrap">${formatDate(cost.costDate)}</td>
           <td class="py-2 pr-4"><span class="rounded-full bg-slate-800 px-2 py-0.5 text-xs">${cost.category}</span></td>
           <td class="py-2 pr-4"><div class="flex items-center gap-2">${avatarBadge(cost.paidBy, cost.paidByName)}<span>${cost.paidByName}</span></div></td>
           <td class="py-2 pr-4 whitespace-nowrap font-medium">${formatCurrency(cost.amount)}</td>
-          <td class="py-2 text-slate-400">${cost.notes || '—'}</td>
+          <td class="py-2 text-slate-400">${cost.notes || '—'}${cost.photoUrl ? ' <svg class="ml-1 inline h-3.5 w-3.5 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 17a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"></path></svg>' : ''}</td>
         `;
+        tr.addEventListener('click', () => openCostSheet(cost));
         els.costsTableBody.appendChild(tr);
       });
     }
@@ -730,23 +1269,25 @@
       els.costAmountError.textContent = '';
       els.costMessage.classList.add('hidden');
       els.logCostButton.disabled = true;
-      els.logCostButton.textContent = 'Saving...';
+      els.logCostButton.textContent = t('saving');
 
       try {
+        const formData = new FormData();
+        formData.append('category', state.selectedCategory);
+        formData.append('paidBy', els.costPaidBy.value);
+        formData.append('amount', els.costAmount.value);
+        if (els.costDate.value) formData.append('costDate', els.costDate.value);
+        if (els.costNotes.value) formData.append('notes', els.costNotes.value);
+        if (els.costPhoto.files[0]) formData.append('photo', els.costPhoto.files[0]);
+
         await fetchJson(`/api/groups/${encodeURIComponent(state.activeGroupId)}/costs`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            category: state.selectedCategory,
-            paidBy: els.costPaidBy.value,
-            amount: Number(els.costAmount.value),
-            costDate: els.costDate.value,
-            notes: els.costNotes.value,
-          }),
+          body: formData,
         });
 
         els.costAmount.value = '';
         els.costNotes.value = '';
+        els.costPhoto.value = '';
         setMessage(els.costMessage, 'Cost logged.', 'success');
         state.dashboardLoaded = false;
         await loadCosts();
@@ -760,7 +1301,7 @@
         }
       } finally {
         els.logCostButton.disabled = false;
-        els.logCostButton.textContent = '+ Add cost';
+        els.logCostButton.textContent = `+ ${t('addCost')}`;
       }
     }
 
@@ -770,31 +1311,110 @@
       els.memberCount.textContent = `${state.balances.length} member${state.balances.length === 1 ? '' : 's'}`;
       els.balancesGrid.innerHTML = '';
 
+      const maxAbs = Math.max(1, ...state.balances.map((b) => Math.abs(b.balance)));
+
       state.balances.forEach((balance) => {
-        const card = document.createElement('div');
-        card.className = 'rounded-xl border border-slate-800 bg-slate-900/70 p-4';
-        let statusHtml;
+        const isSelf = balance.userId === state.currentUserId;
+        const row = document.createElement('div');
+        row.className = `rounded-xl border border-slate-800 bg-slate-900/70 p-4 ${isSelf ? 'cursor-pointer hover:border-slate-600' : ''}`;
+
+        const halfPct = Math.min(50, (Math.abs(balance.balance) / maxAbs) * 50);
+        let amountHtml;
+        let statusText;
+        let barHtml = '';
+
         if (balance.balance > 0.005) {
-          statusHtml = `<p class="text-lg font-semibold text-emerald-400">+${formatCurrency(balance.balance)}</p><p class="text-xs text-slate-400">is owed</p>`;
+          amountHtml = `<span class="font-semibold text-emerald-400">+${formatCurrency(balance.balance)}</span>`;
+          statusText = t('gets');
+          barHtml = `<div class="absolute inset-y-0 rounded-full bg-emerald-500" style="left:50%; width:${halfPct}%"></div>`;
         } else if (balance.balance < -0.005) {
-          statusHtml = `<p class="text-lg font-semibold text-rose-400">${formatCurrency(balance.balance)}</p><p class="text-xs text-slate-400">owes</p>`;
+          amountHtml = `<span class="font-semibold text-rose-400">${formatCurrency(balance.balance)}</span>`;
+          statusText = t('owes');
+          barHtml = `<div class="absolute inset-y-0 rounded-full bg-rose-500" style="left:${50 - halfPct}%; width:${halfPct}%"></div>`;
         } else {
-          statusHtml = `<p class="text-lg font-semibold text-slate-300">€ 0,00</p><p class="text-xs text-slate-400">settled</p>`;
+          amountHtml = `<span class="font-semibold text-slate-300">€ 0,00</span>`;
+          statusText = t('settled');
         }
-        card.innerHTML = `
-          <div class="mb-2 flex items-center gap-2">${avatarBadge(balance.userId, balance.name)}<span class="font-medium">${balance.name}</span></div>
-          ${statusHtml}
+
+        row.innerHTML = `
+          <div class="mb-2 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              ${avatarBadge(balance.userId, balance.name)}
+              <div>
+                <p class="font-medium">${balance.name}</p>
+                <p class="text-xs text-slate-400">${statusText}</p>
+              </div>
+            </div>
+            ${amountHtml}
+          </div>
+          <div class="relative h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+            <div class="absolute inset-y-0 left-1/2 w-px bg-slate-600"></div>
+            ${barHtml}
+          </div>
         `;
-        els.balancesGrid.appendChild(card);
+        if (isSelf) {
+          row.addEventListener('click', openBalanceSheet);
+        }
+        els.balancesGrid.appendChild(row);
       });
     }
 
+    function renderPeriodCard(prefix, stats) {
+      document.getElementById(`${prefix}Km`).textContent = formatKm(stats.kmDriven);
+      document.getElementById(`${prefix}Fixed`).textContent = formatCurrency(stats.fixedCosts);
+      document.getElementById(`${prefix}Flexible`).textContent = formatCurrency(stats.flexibleCosts);
+      document.getElementById(`${prefix}Rate`).textContent =
+        stats.pricePerKm === null || stats.pricePerKm === undefined ? '—' : formatCurrency(stats.pricePerKm);
+    }
+
+    function renderPersonalBalance() {
+      els.personalBalanceCard.innerHTML = '';
+      if (!state.personalSummary) return;
+
+      const balance = state.personalSummary.balance || 0;
+      const row = document.createElement('div');
+      row.className = 'cursor-pointer rounded-xl border border-slate-800 bg-slate-900/70 p-4 hover:border-slate-600';
+      row.addEventListener('click', openBalanceSheet);
+
+      let amountHtml;
+      let statusText;
+      if (balance > 0.005) {
+        amountHtml = `<span class="font-semibold text-emerald-400">+${formatCurrency(balance)}</span>`;
+        statusText = t('gets');
+      } else if (balance < -0.005) {
+        amountHtml = `<span class="font-semibold text-rose-400">${formatCurrency(balance)}</span>`;
+        statusText = t('owes');
+      } else {
+        amountHtml = `<span class="font-semibold text-slate-300">€ 0,00</span>`;
+        statusText = t('settled');
+      }
+
+      row.innerHTML = `
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            ${avatarBadge(state.currentUserId, state.profile ? `${state.profile.first_name || ''} ${state.profile.last_name || ''}`.trim() : t('you'))}
+            <div>
+              <p class="font-medium">${t('you')}</p>
+              <p class="text-xs text-slate-400">${statusText}</p>
+            </div>
+          </div>
+          ${amountHtml}
+        </div>
+      `;
+      els.personalBalanceCard.appendChild(row);
+    }
+
     function renderActivity() {
-      els.activityCount.textContent = state.activity.length ? `${state.activity.length} entries` : '';
-      els.activityEmpty.classList.toggle('hidden', state.activity.length > 0);
+      const isPersonal = state.dashboardScope === 'personal';
+      const entries = isPersonal
+        ? state.activity.filter((entry) => (entry.whoIds || []).includes(state.currentUserId))
+        : state.activity;
+
+      els.activityCount.textContent = entries.length ? `${entries.length} entries` : '';
+      els.activityEmpty.classList.toggle('hidden', entries.length > 0);
       els.activityTableBody.innerHTML = '';
 
-      state.activity.forEach((entry) => {
+      entries.forEach((entry) => {
         const tr = document.createElement('tr');
         const typeLabel = entry.type === 'trip' ? 'Trip' : 'Cost';
         const who = (entry.who || []).join(' & ') || '—';
@@ -803,19 +1423,40 @@
           <td class="py-2 pr-4 whitespace-nowrap text-slate-300">${typeLabel}</td>
           <td class="py-2 pr-4">${who}</td>
           <td class="py-2 pr-4 text-slate-400">${entry.details || ''}</td>
-          <td class="py-2 text-right font-medium">${entry.amount === null || entry.amount === undefined ? '—' : formatCurrency(entry.amount)}</td>
+          <td class="py-2 whitespace-nowrap text-right font-medium">${entry.amount === null || entry.amount === undefined ? '—' : formatCurrency(entry.amount)}</td>
         `;
         els.activityTableBody.appendChild(tr);
       });
+    }
+
+    function renderDashboardScope() {
+      const isPersonal = state.dashboardScope === 'personal';
+      document.querySelectorAll('.scope-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.scope === state.dashboardScope);
+      });
+      els.groupBalancesSection.classList.toggle('hidden', isPersonal);
+      els.personalBalanceSection.classList.toggle('hidden', !isPersonal);
+
+      if (isPersonal && state.personalSummary) {
+        renderPersonalBalance();
+        renderPeriodCard('month', state.personalSummary.thisMonth);
+        renderPeriodCard('allTime', state.personalSummary.allTime);
+      } else if (state.summary) {
+        renderPeriodCard('month', state.summary.thisMonth);
+        renderPeriodCard('allTime', state.summary.allTime);
+      }
+      renderActivity();
     }
 
     async function loadBalances() {
       const payload = await fetchJson(`/api/groups/${encodeURIComponent(state.activeGroupId)}/balances`);
       state.balances = payload.balances || [];
       state.activity = payload.activity || [];
+      state.summary = payload.summary || null;
+      state.personalSummary = payload.personalSummary || null;
       state.dashboardLoaded = true;
       renderBalances();
-      renderActivity();
+      renderDashboardScope();
       renderTips();
     }
 
@@ -835,6 +1476,7 @@
       state.trips = []; state.tripsLoaded = false;
       state.costs = []; state.costsLoaded = false;
       state.balances = []; state.activity = []; state.dashboardLoaded = false;
+      state.personalSummary = null; state.dashboardScope = 'group';
       state.selectedParticipantIds.clear();
       state.activeTab = 'trips';
 
@@ -891,7 +1533,7 @@
 
         els.accountName.textContent = firstName;
         els.accountAvatar.textContent = accountInitials || 'U';
-        els.welcomeTitle.textContent = `Welcome, ${firstName}`;
+        els.welcomeTitle.textContent = `${t('welcome')}, ${firstName}`;
 
         const groupsPayload = await fetchJson('/api/groups');
         state.groups = groupsPayload.groups || [];
@@ -916,9 +1558,8 @@
     els.menuToggle.addEventListener('click', () => setDrawerState(!state.drawerOpen));
     els.retryButton.addEventListener('click', initPage);
     els.workspaceRetryButton.addEventListener('click', loadWorkspace);
-    els.logoutButton.addEventListener('click', () => {
-      clearSessionToken();
-      window.location.href = '/login';
+    els.accountButton.addEventListener('click', () => {
+      window.location.href = '/settings';
     });
 
     els.dismissInsuranceBanner.addEventListener('click', async () => {
@@ -988,6 +1629,7 @@
       setDrawerState(false);
     }
 
+    applyStaticTranslations();
     initPage();
   </script>
 {% endblock %}

@@ -119,6 +119,16 @@ def group_workspace_page(group_id):
     return redirect("/dashboard")
 
 
+@app.route("/settings", methods=["GET"])
+def settings():
+    return render_template("settings.html")
+
+
+@app.route("/faq", methods=["GET"])
+def faq():
+    return render_template("faq.html")
+
+
 @app.route("/profile-settings", methods=["GET"])
 def profile_settings():
     return render_template("profile_settings.html")

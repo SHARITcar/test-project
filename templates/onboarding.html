@@ -10,13 +10,25 @@
 
 {% block content %}
   <main class="w-full max-w-md">
+    <div class="mb-4 flex justify-center gap-1.5" id="onboardingDots">
+      <span class="onboarding-dot h-1.5 w-6 rounded-full bg-slate-100" data-dot="0"></span>
+      <span class="onboarding-dot h-1.5 w-6 rounded-full bg-slate-700" data-dot="1"></span>
+      <span class="onboarding-dot h-1.5 w-6 rounded-full bg-slate-700" data-dot="2"></span>
+    </div>
+
     <section id="screen1" class="rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
       <h1 class="mb-4 text-2xl font-bold">Hoe werkt SHARIT?</h1>
       <p class="mb-8 text-slate-300">SHARIT helpt je kilometers en kosten van jullie gezamenlijke deelauto eerlijk te verdelen.</p>
-      <button id="nextButton" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Volgende</button>
+      <button id="nextButton1" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Volgende</button>
     </section>
 
     <section id="screen2" class="hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
+      <h1 class="mb-4 text-2xl font-bold">Rit loggen, klaar</h1>
+      <p class="mb-8 text-slate-300">Voer de kilometerstand in bij vertrek en aankomst. SHARIT berekent de afstand en kosten automatisch, en verdeelt ze eerlijk over de rijders.</p>
+      <button id="nextButton2" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Volgende</button>
+    </section>
+
+    <section id="screen3" class="hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
       <h1 class="mb-4 text-2xl font-bold">Vorm een groep</h1>
       <p class="mb-8 text-slate-300">Maak een nieuwe groep aan, of neem deel via een uitnodigingslink. Iedereen die meerijdt of meebetaalt, meldt zich aan bij dezelfde groep.</p>
       <button id="startButton" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Aan de slag</button>
@@ -97,10 +109,16 @@
       window.location.href = '/dashboard';
     }
 
-    document.getElementById('nextButton').addEventListener('click', () => {
-      document.getElementById('screen1').classList.add('hidden');
-      document.getElementById('screen2').classList.remove('hidden');
-    });
+    function goToScreen(index) {
+      [0, 1, 2].forEach((i) => {
+        document.getElementById(`screen${i + 1}`).classList.toggle('hidden', i !== index);
+        document.querySelector(`.onboarding-dot[data-dot="${i}"]`).classList.toggle('bg-slate-100', i === index);
+        document.querySelector(`.onboarding-dot[data-dot="${i}"]`).classList.toggle('bg-slate-700', i !== index);
+      });
+    }
+
+    document.getElementById('nextButton1').addEventListener('click', () => goToScreen(1));
+    document.getElementById('nextButton2').addEventListener('click', () => goToScreen(2));
     document.getElementById('startButton').addEventListener('click', completeOnboarding);
 
     loadCurrentUser().then((userProfile) => {
