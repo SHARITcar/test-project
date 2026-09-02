@@ -73,6 +73,11 @@
           <a id="groupSettingsLink" href="#" class="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800" data-i18n="groupSettings">Group settings</a>
         </div>
 
+        <a id="missingPayerBanner" href="#" class="mb-4 hidden items-center justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-100 hover:bg-amber-500/20">
+          <span data-i18n="missingPayerBanner">A fixed cost is missing a payer. Add one in group settings.</span>
+          <span aria-hidden="true">&rarr;</span>
+        </a>
+
         <section id="workspaceLoading" class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
           <p class="text-slate-300" data-i18n="loading">Loading...</p>
         </section>
@@ -380,6 +385,7 @@
         emptyStateCreateGroup: 'Create your first car-sharing group',
         unableToLoadDashboard: 'Unable to load dashboard.', retry: 'Retry',
         groupSettings: 'Group settings', loading: 'Loading...', unableToLoadGroup: 'Unable to load this group right now.',
+        missingPayerBanner: "A fixed cost is missing a payer. Add one in group settings.",
         currentOdometer: 'Current odometer', lastTrip: 'Last trip', hasTheKey: 'Has the key',
         tripsTip: "Enter the total odometer reading for every trip — not the daily distance. Nothing to fill in again at the end of the trip.",
         addTrip: 'Add trip', date: 'Date', participants: 'Participants', startOdometer: 'Start odometer', endOdometer: 'End odometer',
@@ -414,6 +420,7 @@
         emptyStateCreateGroup: 'Creëer je eerste autogroep',
         unableToLoadDashboard: 'Dashboard kon niet worden geladen.', retry: 'Opnieuw',
         groupSettings: 'Groepsinstellingen', loading: 'Laden...', unableToLoadGroup: 'Deze groep kon nu niet worden geladen.',
+        missingPayerBanner: 'Een vaste kost heeft nog geen betaler. Voeg deze toe via groepsinstellingen.',
         currentOdometer: 'Huidige kilometerstand', lastTrip: 'Laatste rit', hasTheKey: 'Heeft de sleutel',
         tripsTip: 'Voer bij elke rit de totale kilometerstand in — niet de dagstand. Aan het einde van de rit hoef je niets opnieuw in te vullen.',
         addTrip: 'Rit toevoegen', date: 'Datum', participants: 'Deelnemers', startOdometer: 'Beginstand', endOdometer: 'Eindstand',
@@ -525,6 +532,7 @@
       workspaceSection: document.getElementById('workspaceSection'),
       activeGroupName: document.getElementById('activeGroupName'),
       groupSettingsLink: document.getElementById('groupSettingsLink'),
+      missingPayerBanner: document.getElementById('missingPayerBanner'),
       workspaceLoading: document.getElementById('workspaceLoading'),
       workspaceError: document.getElementById('workspaceError'),
       workspaceErrorText: document.getElementById('workspaceErrorText'),
@@ -1062,6 +1070,10 @@
       state.activeGroupId = active.id;
       els.activeGroupName.textContent = active.name;
       els.groupSettingsLink.href = `/groups/${encodeURIComponent(active.id)}/settings`;
+      els.missingPayerBanner.href = `/groups/${encodeURIComponent(active.id)}/settings`;
+      const hasPendingPayer = Boolean(active.has_pending_fixed_cost_payer);
+      els.missingPayerBanner.classList.toggle('hidden', !hasPendingPayer);
+      els.missingPayerBanner.classList.toggle('flex', hasPendingPayer);
       els.workspaceSection.classList.remove('hidden');
     }
 

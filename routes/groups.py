@@ -21,11 +21,15 @@ logger = logging.getLogger(__name__)
 
 MAX_GROUP_NAME_LENGTH = 120
 FIXED_COST_SPLIT_METHODS = ("equal", "per_km")
+FIXED_COST_PERIODS = ("month", "quarter", "year")
+FIXED_COST_PERIOD_MULTIPLIERS = {"month": 12, "quarter": 4, "year": 1}
+MISSING_PAYER_REMINDER_AFTER_DAYS = 2
 PRICE_PER_KM_MODES = ("auto", "manual")
 FUEL_COUNTRIES = ("NL", "BE", "DE")
 MIN_PRICE_PER_KM = Decimal("0.0001")
 MAX_PRICE_PER_KM = Decimal("100")
 MAX_PARTICIPANTS_PREVIEW = 10
+MAX_GROUP_PHOTO_BYTES = 2 * 1024 * 1024  # 2MB
 
 
 def _auth_context():
@@ -219,6 +223,17 @@ def _friendly_error(message: str, can_retry: bool = False):
     return payload
 
 
+def _rollback_group_creation(token: str, user_id: str, group_id: str) -> None:
+    try:
+        rollback_client = db_for(token)
+        rollback_client.table("group_fixed_costs").delete().eq("group_id", group_id).execute()
+        rollback_client.table("invitation_links").delete().eq("group_id", group_id).execute()
+        rollback_client.table("group_members").delete().eq("group_id", group_id).eq("user_id", user_id).execute()
+        rollback_client.table("car_sharing_groups").delete().eq("id", group_id).eq("created_by", user_id).execute()
+    except Exception as rollback_exc:
+        logger.error(f"Rollback failed for group {group_id}: {rollback_exc}")
+
+
 def _as_bool(value) -> bool:
     if isinstance(value, bool):
         return value
@@ -229,24 +244,38 @@ def _as_bool(value) -> bool:
     return bool(value)
 
 
+def _file_size_bytes(file) -> int:
+    position = file.stream.tell()
+    file.stream.seek(0, os.SEEK_END)
+    size = file.stream.tell()
+    file.stream.seek(position)
+    return size
+
+
 def _upload_group_photo_to_storage(client, group_id: str, file):
     mimetype = (file.mimetype or "").lower()
     if not mimetype.startswith("image/"):
-        return None, "Only image uploads are allowed"
+        return None, "Alleen afbeeldingen zijn toegestaan"
+
+    if _file_size_bytes(file) > MAX_GROUP_PHOTO_BYTES:
+        return None, "Foto is te groot (max. 2MB). Probeer een kleiner bestand."
 
     bucket_name = os.getenv("GROUP_PHOTO_BUCKET", "group-photos")
     extension = (file.filename.rsplit(".", 1)[-1] if file.filename and "." in file.filename else "jpg").lower()
     object_path = f"{group_id}/{uuid.uuid4()}.{extension}"
 
-    upload_result = client.storage.from_(bucket_name).upload(
-        object_path,
-        file.read(),
-        {"content-type": mimetype, "upsert": "true"},
-    )
+    try:
+        upload_result = client.storage.from_(bucket_name).upload(
+            object_path,
+            file.read(),
+            {"content-type": mimetype, "upsert": "true"},
+        )
+    except Exception as exc:
+        return None, f"Foto kon niet worden geüpload: {exc}"
 
     # supabase-py may return a dict or object; detect errors defensively.
     if isinstance(upload_result, dict) and upload_result.get("error"):
-        raise RuntimeError(upload_result["error"])
+        return None, f"Foto kon niet worden geüpload: {upload_result['error']}"
 
     public_result = client.storage.from_(bucket_name).get_public_url(object_path)
     if isinstance(public_result, dict):
@@ -255,7 +284,7 @@ def _upload_group_photo_to_storage(client, group_id: str, file):
         photo_url = str(public_result)
 
     if not photo_url:
-        raise RuntimeError("Could not resolve uploaded photo URL")
+        return None, "Foto kon niet worden geüpload. Probeer het opnieuw."
 
     return photo_url, None
 
@@ -282,62 +311,71 @@ def _validate_group_payload(payload: dict):
     group_name = (payload.get("groupName") or "").strip()
     license_plate = (payload.get("licensePlate") or "").strip() or None
     if not group_name:
-        errors["groupName"] = "Group name is required"
+        errors["groupName"] = "Groepsnaam is verplicht"
     elif len(group_name) > MAX_GROUP_NAME_LENGTH:
-        errors["groupName"] = "Group name is too long"
+        errors["groupName"] = "Groepsnaam is te lang"
 
     price_per_km = _to_decimal(payload.get("pricePerKilometer"))
     if price_per_km is None:
-        errors["pricePerKilometer"] = "Price per kilometer must be a number"
+        errors["pricePerKilometer"] = "Prijs per kilometer moet een getal zijn"
     elif price_per_km < MIN_PRICE_PER_KM or price_per_km > MAX_PRICE_PER_KM:
-        errors["pricePerKilometer"] = "Price per kilometer must be between 0.0001 and 100"
+        errors["pricePerKilometer"] = "Prijs per kilometer moet tussen 0,0001 en 100 liggen"
 
     price_per_km_mode = (payload.get("pricePerKmMode") or "manual").strip()
     if price_per_km_mode not in PRICE_PER_KM_MODES:
-        errors["pricePerKmMode"] = "Price mode must be 'auto' or 'manual'"
+        errors["pricePerKmMode"] = "Prijsmodus moet 'auto' of 'manual' zijn"
 
     fuel_country = (payload.get("fuelCountry") or "NL").strip()
     if fuel_country not in FUEL_COUNTRIES:
-        errors["fuelCountry"] = "Fuel country must be 'NL', 'BE', or 'DE'"
+        errors["fuelCountry"] = "Brandstofland moet 'NL', 'BE' of 'DE' zijn"
 
     reminder_type = (payload.get("reminderType") or "").strip()
     if not reminder_type:
-        errors["reminderType"] = "Reminder type is required"
+        errors["reminderType"] = "Herinneringstype is verplicht"
 
     internal_agreements = payload.get("internalAgreements")
     if internal_agreements is not None and not isinstance(internal_agreements, dict):
-        errors["internalAgreements"] = "Internal agreements must be an object"
+        errors["internalAgreements"] = "Interne afspraken hebben een ongeldig formaat"
 
     fixed_costs = payload.get("fixedCosts") or []
     if not isinstance(fixed_costs, list):
-        errors["fixedCosts"] = "Fixed costs must be a list"
+        errors["fixedCosts"] = "Vaste kosten hebben een ongeldig formaat"
         fixed_costs = []
 
     normalized_costs = []
     for i, cost in enumerate(fixed_costs):
         if not isinstance(cost, dict):
-            errors[f"fixedCosts.{i}"] = "Fixed cost entry must be an object"
+            errors[f"fixedCosts.{i}"] = "Vaste kostenpost heeft een ongeldig formaat"
             continue
 
         cost_type = (cost.get("type") or "").strip()
         amount = _to_decimal(cost.get("amount"))
         description = (cost.get("description") or "").strip() or None
         split_method = (cost.get("splitMethod") or "equal").strip()
+        paid_by_name = (cost.get("paidByName") or "").strip() or None
+        period = (cost.get("period") or "year").strip()
 
         if not cost_type:
-            errors[f"fixedCosts.{i}.type"] = "Cost type is required"
+            errors[f"fixedCosts.{i}.type"] = "Type kosten is verplicht"
         if amount is None or amount < 0:
-            errors[f"fixedCosts.{i}.amount"] = "Amount must be a non-negative number"
+            errors[f"fixedCosts.{i}.amount"] = "Bedrag moet een getal van 0 of hoger zijn"
         if split_method not in FIXED_COST_SPLIT_METHODS:
-            errors[f"fixedCosts.{i}.splitMethod"] = "Split method must be 'equal' or 'per_km'"
+            errors[f"fixedCosts.{i}.splitMethod"] = "Verdeelmethode moet 'equal' of 'per_km' zijn"
+        if period not in FIXED_COST_PERIODS:
+            errors[f"fixedCosts.{i}.period"] = "Periode moet 'month', 'quarter' of 'year' zijn"
 
-        if cost_type and amount is not None and amount >= 0 and split_method in FIXED_COST_SPLIT_METHODS:
+        if (
+            cost_type and amount is not None and amount >= 0
+            and split_method in FIXED_COST_SPLIT_METHODS and period in FIXED_COST_PERIODS
+        ):
             normalized_costs.append(
                 {
                     "cost_type": cost_type,
                     "amount": float(amount),
                     "description": description,
                     "split_method": split_method,
+                    "paid_by_name": paid_by_name,
+                    "period": period,
                 }
             )
 
@@ -506,7 +544,7 @@ def list_groups():
         if group_ids:
             groups_result = (
                 client.table("car_sharing_groups")
-                .select("id, name, license_plate, photo_url, price_per_km, reminder_type, invite_link, created_at, created_by")
+                .select("id, name, license_plate, photo_url, price_per_km, large_distance_threshold_km, reminder_type, invite_link, created_at, created_by")
                 .in_("id", group_ids)
                 .execute()
             )
@@ -518,6 +556,7 @@ def list_groups():
                 group = dict(group)
                 group["role"] = membership.get("role")
                 group["joined_at"] = membership.get("joined_at")
+                group["has_pending_fixed_cost_payer"] = _has_overdue_missing_payer(client, group["id"])
                 groups.append(group)
 
         profile = _get_profile(client, str(user.id))
@@ -836,7 +875,7 @@ def create_group():
     ) = _validate_group_payload(body)
 
     if errors:
-        return jsonify({"error": "Please correct the highlighted fields", "fieldErrors": errors}), 400
+        return jsonify({"error": "Controleer de gemarkeerde velden", "fieldErrors": errors}), 400
 
     idempotency_key = (
         request.headers.get("Idempotency-Key")
@@ -850,8 +889,15 @@ def create_group():
     if group_photo and not _is_supported_image(group_photo):
         return jsonify(
             {
-                "error": "Please correct the highlighted fields",
-                "fieldErrors": {"groupPhoto": "Only image uploads are allowed"},
+                "error": "Controleer de gemarkeerde velden",
+                "fieldErrors": {"groupPhoto": "Alleen afbeeldingen zijn toegestaan"},
+            }
+        ), 400
+    if group_photo and _file_size_bytes(group_photo) > MAX_GROUP_PHOTO_BYTES:
+        return jsonify(
+            {
+                "error": "Controleer de gemarkeerde velden",
+                "fieldErrors": {"groupPhoto": "Foto is te groot (max. 2MB). Probeer een kleiner bestand."},
             }
         ), 400
 
@@ -862,10 +908,10 @@ def create_group():
 
         profile = _get_profile(client, str(user.id))
         if not profile.data:
-            return jsonify({"error": "Profile not found"}), 404
+            return jsonify({"error": "Profiel niet gevonden"}), 404
 
         if not profile.data.get("onboarding_completed"):
-            return jsonify({"error": "Complete onboarding before creating a group"}), 403
+            return jsonify({"error": "Rond eerst de onboarding af voordat je een groep aanmaakt"}), 403
 
         existing = (
             client.table("car_sharing_groups")
@@ -895,19 +941,19 @@ def create_group():
             .execute()
         )
         if not reminder.data:
-            return jsonify({"error": "Selected reminder type is not available", "fieldErrors": {"reminderType": "Invalid reminder type"}}), 400
+            return jsonify({"error": "Gekozen herinneringstype is niet beschikbaar", "fieldErrors": {"reminderType": "Ongeldig herinneringstype"}}), 400
 
         reminder_row = reminder.data[0]
         if reminder_row.get("is_physical"):
             if not _has_required_shipping_fields(shipping_address):
                 return jsonify({
-                    "error": "Shipping address is required for a physical reminder",
-                    "fieldErrors": {"shippingAddress": "Shipping address with street, city, and postal code is required"},
+                    "error": "Verzendadres is verplicht voor een fysieke herinnering",
+                    "fieldErrors": {"shippingAddress": "Verzendadres met straat, plaats en postcode is verplicht"},
                 }), 400
             if not payment_confirmed:
                 return jsonify({
-                    "error": "Please complete payment before creating a group with a physical reminder",
-                    "fieldErrors": {"paymentConfirmed": "Payment confirmation is required"},
+                    "error": "Rond de betaling af voordat je een groep met een fysieke herinnering aanmaakt",
+                    "fieldErrors": {"paymentConfirmed": "Betalingsbevestiging is verplicht"},
                 }), 400
 
         app_base_url = os.getenv("APP_BASE_URL", "http://localhost:5000")
@@ -918,11 +964,11 @@ def create_group():
         if not invite_link:
             invite_link = _generate_unique_invite_link(client, app_base_url)
         if not invite_link:
-            return jsonify(_friendly_error("Could not generate invite link. Please retry.", can_retry=True)), 500
+            return jsonify(_friendly_error("Kon geen uitnodigingslink genereren. Probeer het opnieuw.", can_retry=True)), 500
 
         invite_token = _extract_invite_token(invite_link)
         if not invite_token:
-            return jsonify(_friendly_error("Could not generate invite link. Please retry.", can_retry=True)), 500
+            return jsonify(_friendly_error("Kon geen uitnodigingslink genereren. Probeer het opnieuw.", can_retry=True)), 500
 
         group_insert = {
             "name": group_name,
@@ -947,7 +993,7 @@ def create_group():
         )
 
         if not group_result.data:
-            return jsonify(_friendly_error("We couldn't create your group right now. Please retry.", can_retry=True)), 500
+            return jsonify(_friendly_error("Groep aanmaken is niet gelukt. Probeer het opnieuw.", can_retry=True)), 500
 
         group = group_result.data[0]
         group_id = group["id"]
@@ -989,6 +1035,8 @@ def create_group():
                         "amount": cost["amount"],
                         "description": cost["description"],
                         "split_method": cost["split_method"],
+                        "paid_by_name": cost["paid_by_name"],
+                        "period": cost["period"],
                     }
                 )
             client.table("group_fixed_costs").insert(fixed_cost_rows).execute()
@@ -1002,7 +1050,13 @@ def create_group():
         if group_photo:
             uploaded_url, upload_error = _upload_group_photo_to_storage(client, group_id, group_photo)
             if upload_error:
-                raise RuntimeError(upload_error)
+                # Creation is all-or-nothing: undo the group rather than leave
+                # it stranded without a photo the user expected.
+                _rollback_group_creation(token, str(user.id), group_id)
+                return jsonify({
+                    "error": upload_error,
+                    "fieldErrors": {"groupPhoto": upload_error},
+                }), 400
             if uploaded_url:
                 photo_url = uploaded_url
                 client.table("car_sharing_groups").update({"photo_url": photo_url}).eq("id", group_id).execute()
@@ -1026,8 +1080,9 @@ def create_group():
 
     except Exception as exc:
         logger.error(f"Failed to create group for {user.id}: {exc}")
+        exc_text = str(exc).lower()
 
-        if "duplicate key value" in str(exc).lower() and group_id is None:
+        if "duplicate key value" in exc_text and group_id is None:
             try:
                 client = db_for(token)
                 existing = (
@@ -1052,16 +1107,21 @@ def create_group():
                 logger.error(f"Duplicate-key lookup failed for user {user.id}: {lookup_exc}")
 
         if group_id:
-            try:
-                rollback_client = db_for(token)
-                rollback_client.table("group_fixed_costs").delete().eq("group_id", group_id).execute()
-                rollback_client.table("invitation_links").delete().eq("group_id", group_id).execute()
-                rollback_client.table("group_members").delete().eq("group_id", group_id).eq("user_id", str(user.id)).execute()
-                rollback_client.table("car_sharing_groups").delete().eq("id", group_id).eq("created_by", str(user.id)).execute()
-            except Exception as rollback_exc:
-                logger.error(f"Rollback failed for group {group_id}: {rollback_exc}")
+            _rollback_group_creation(token, str(user.id), group_id)
 
-        return jsonify(_friendly_error("Something went wrong while creating your group. Please retry.", can_retry=True)), 500
+        # Distinguish a broken backend (schema/config issue we need to fix)
+        # from a genuinely transient failure, so support reports point at
+        # the right cause instead of always looking like "just retry".
+        if "does not exist" in exc_text or "schema cache" in exc_text:
+            message = "Groep aanmaken is momenteel niet mogelijk door een technisch probleem. We zijn op de hoogte, probeer het later opnieuw."
+        elif "violates check constraint" in exc_text and "price_per_km" in exc_text:
+            message = "Prijs per kilometer moet groter zijn dan 0."
+        elif "timeout" in exc_text or "timed out" in exc_text:
+            message = "Groep aanmaken duurde te lang. Probeer het opnieuw."
+        else:
+            message = "Er ging iets mis bij het aanmaken van je groep. Probeer het opnieuw."
+
+        return jsonify(_friendly_error(message, can_retry=True)), 500
 
 
 @bp.route("/api/groups/<group_id>/photo", methods=["POST"])
@@ -1105,6 +1165,198 @@ def upload_group_photo(group_id: str):
     except Exception as exc:
         logger.error(f"Failed photo upload for group {group_id}: {exc}")
         return jsonify(_friendly_error("We couldn't upload the photo right now. Please try again.", can_retry=True)), 500
+
+
+def _serialize_fixed_cost(row: dict) -> dict:
+    amount = row.get("amount")
+    period = row.get("period") or "year"
+    multiplier = FIXED_COST_PERIOD_MULTIPLIERS.get(period, 1)
+    annualized = float(amount) * multiplier if amount is not None else None
+    paid_by_name = row.get("paid_by_name")
+    created_at = row.get("created_at")
+    missing_payer = not paid_by_name
+    days_old = None
+    if created_at:
+        try:
+            created_dt = datetime.fromisoformat(str(created_at).replace("Z", "+00:00"))
+            days_old = (datetime.now(timezone.utc) - created_dt).days
+        except ValueError:
+            days_old = None
+
+    return {
+        "id": row.get("id"),
+        "costType": row.get("cost_type"),
+        "amount": amount,
+        "period": period,
+        "annualizedAmount": annualized,
+        "description": row.get("description"),
+        "splitMethod": row.get("split_method"),
+        "paidByName": paid_by_name,
+        "createdAt": created_at,
+        "missingPayer": missing_payer,
+        "missingPayerOverdue": bool(
+            missing_payer and days_old is not None and days_old >= MISSING_PAYER_REMINDER_AFTER_DAYS
+        ),
+    }
+
+
+def _has_overdue_missing_payer(client, group_id: str) -> bool:
+    rows = (
+        client.table("group_fixed_costs")
+        .select("paid_by_name, created_at")
+        .eq("group_id", group_id)
+        .execute()
+    )
+    for row in rows.data or []:
+        if row.get("paid_by_name"):
+            continue
+        created_at = row.get("created_at")
+        if not created_at:
+            continue
+        try:
+            created_dt = datetime.fromisoformat(str(created_at).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if (datetime.now(timezone.utc) - created_dt).days >= MISSING_PAYER_REMINDER_AFTER_DAYS:
+            return True
+    return False
+
+
+@bp.route("/api/groups/<group_id>/fixed-costs", methods=["GET", "POST"])
+def group_fixed_costs(group_id: str):
+    token, user, error = _auth_context()
+    if error:
+        return error
+
+    try:
+        client = db_for(token)
+        if not _require_membership(client, group_id, str(user.id)):
+            return jsonify({"error": "Group not found or access denied"}), 404
+
+        if request.method == "GET":
+            rows = (
+                client.table("group_fixed_costs")
+                .select("id, cost_type, amount, description, split_method, paid_by_name, period, created_at")
+                .eq("group_id", group_id)
+                .order("created_at")
+                .execute()
+            )
+            costs = [_serialize_fixed_cost(row) for row in (rows.data or [])]
+            return jsonify({"fixedCosts": costs}), 200
+
+        body = request.get_json(silent=True) or {}
+        cost_type = (body.get("costType") or "").strip()
+        amount = _to_decimal(body.get("amount"))
+        description = (body.get("description") or "").strip() or None
+        split_method = (body.get("splitMethod") or "equal").strip()
+        paid_by_name = (body.get("paidByName") or "").strip() or None
+        period = (body.get("period") or "year").strip()
+
+        errors = {}
+        if not cost_type:
+            errors["costType"] = "Type kosten is verplicht"
+        if amount is None or amount < 0:
+            errors["amount"] = "Bedrag moet een getal van 0 of hoger zijn"
+        if split_method not in FIXED_COST_SPLIT_METHODS:
+            errors["splitMethod"] = "Verdeelmethode moet 'equal' of 'per_km' zijn"
+        if period not in FIXED_COST_PERIODS:
+            errors["period"] = "Periode moet 'month', 'quarter' of 'year' zijn"
+        if errors:
+            return jsonify({"error": "Controleer de gemarkeerde velden", "fieldErrors": errors}), 400
+
+        insert_result = (
+            client.table("group_fixed_costs")
+            .insert({
+                "group_id": group_id,
+                "cost_type": cost_type,
+                "amount": float(amount),
+                "description": description,
+                "split_method": split_method,
+                "paid_by_name": paid_by_name,
+                "period": period,
+            })
+            .execute()
+        )
+        if not insert_result.data:
+            return jsonify(_friendly_error("Kosten toevoegen is niet gelukt. Probeer het opnieuw.", can_retry=True)), 500
+
+        return jsonify({"fixedCost": _serialize_fixed_cost(insert_result.data[0])}), 201
+
+    except Exception as exc:
+        logger.error(f"Failed fixed-costs request for group {group_id}: {exc}")
+        return jsonify(_friendly_error("Er ging iets mis. Probeer het opnieuw.", can_retry=True)), 500
+
+
+@bp.route("/api/groups/<group_id>/fixed-costs/<cost_id>", methods=["PATCH", "DELETE"])
+def group_fixed_cost_detail(group_id: str, cost_id: str):
+    token, user, error = _auth_context()
+    if error:
+        return error
+
+    try:
+        client = db_for(token)
+        if not _require_membership(client, group_id, str(user.id)):
+            return jsonify({"error": "Group not found or access denied"}), 404
+
+        existing = (
+            client.table("group_fixed_costs")
+            .select("id")
+            .eq("id", cost_id)
+            .eq("group_id", group_id)
+            .limit(1)
+            .execute()
+        )
+        if not existing.data:
+            return jsonify({"error": "Fixed cost not found"}), 404
+
+        if request.method == "DELETE":
+            client.table("group_fixed_costs").delete().eq("id", cost_id).execute()
+            return jsonify({"success": True}), 200
+
+        body = request.get_json(silent=True) or {}
+        updates = {}
+        if "costType" in body:
+            cost_type = (body.get("costType") or "").strip()
+            if not cost_type:
+                return jsonify({"error": "Controleer de gemarkeerde velden", "fieldErrors": {"costType": "Type kosten is verplicht"}}), 400
+            updates["cost_type"] = cost_type
+        if "amount" in body:
+            amount = _to_decimal(body.get("amount"))
+            if amount is None or amount < 0:
+                return jsonify({"error": "Controleer de gemarkeerde velden", "fieldErrors": {"amount": "Bedrag moet een getal van 0 of hoger zijn"}}), 400
+            updates["amount"] = float(amount)
+        if "period" in body:
+            period = (body.get("period") or "year").strip()
+            if period not in FIXED_COST_PERIODS:
+                return jsonify({"error": "Controleer de gemarkeerde velden", "fieldErrors": {"period": "Periode moet 'month', 'quarter' of 'year' zijn"}}), 400
+            updates["period"] = period
+        if "splitMethod" in body:
+            split_method = (body.get("splitMethod") or "equal").strip()
+            if split_method not in FIXED_COST_SPLIT_METHODS:
+                return jsonify({"error": "Controleer de gemarkeerde velden", "fieldErrors": {"splitMethod": "Verdeelmethode moet 'equal' of 'per_km' zijn"}}), 400
+            updates["split_method"] = split_method
+        if "description" in body:
+            updates["description"] = (body.get("description") or "").strip() or None
+        if "paidByName" in body:
+            updates["paid_by_name"] = (body.get("paidByName") or "").strip() or None
+
+        if not updates:
+            return jsonify({"error": "No changes to save"}), 400
+
+        update_result = (
+            client.table("group_fixed_costs")
+            .update(updates)
+            .eq("id", cost_id)
+            .execute()
+        )
+        if not update_result.data:
+            return jsonify(_friendly_error("Opslaan is niet gelukt. Probeer het opnieuw.", can_retry=True)), 500
+
+        return jsonify({"fixedCost": _serialize_fixed_cost(update_result.data[0])}), 200
+
+    except Exception as exc:
+        logger.error(f"Failed to update fixed cost {cost_id} for group {group_id}: {exc}")
+        return jsonify(_friendly_error("Er ging iets mis. Probeer het opnieuw.", can_retry=True)), 500
 
 
 def _require_membership(client, group_id: str, user_id: str):
@@ -1173,6 +1425,13 @@ def _validate_group_update_payload(payload: dict):
         else:
             updates["fuel_country"] = fuel_country
 
+    if "largeDistanceThresholdKm" in payload:
+        threshold = _to_decimal(payload.get("largeDistanceThresholdKm"))
+        if threshold is None or threshold <= 0:
+            errors["largeDistanceThresholdKm"] = "Long-trip threshold must be a positive number"
+        else:
+            updates["large_distance_threshold_km"] = float(threshold)
+
     if "reminderType" in payload:
         reminder_type = (payload.get("reminderType") or "").strip()
         if not reminder_type:
@@ -1206,7 +1465,7 @@ def group_detail(group_id: str):
                 client.table("car_sharing_groups")
                 .select(
                     "id, name, license_plate, photo_url, price_per_km, price_per_km_mode, "
-                    "fuel_country, reminder_type, "
+                    "fuel_country, large_distance_threshold_km, reminder_type, "
                     "internal_agreements, invite_link, member_count, created_at"
                 )
                 .eq("id", group_id)

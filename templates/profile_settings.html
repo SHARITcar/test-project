@@ -37,6 +37,7 @@
             <p class="font-medium">Profile photo</p>
             <button type="button" id="photoChangeButton" class="text-sm text-cyan-300 hover:text-cyan-200">Change photo</button>
             <input id="photoInput" type="file" accept="image/*" class="hidden">
+            <p class="mt-1 text-xs text-slate-500">Max. 2MB</p>
             <p id="photoError" class="mt-1 text-sm text-red-300"></p>
           </div>
         </div>
@@ -214,6 +215,8 @@
       }
     }
 
+    const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // keep in sync with backend MAX_AVATAR_BYTES
+
     async function uploadPhoto(file) {
       els.photoError.textContent = '';
       if (!String(file.type || '').startsWith('image/')) {
@@ -221,8 +224,14 @@
         return;
       }
 
+      const finalFile = await SharitImageCompress.compressIfNeeded(file, MAX_AVATAR_BYTES);
+      if (finalFile.size > MAX_AVATAR_BYTES) {
+        els.photoError.textContent = 'Photo is too large (max 2MB). Please use a smaller file.';
+        return;
+      }
+
       const formData = new FormData();
-      formData.append('photo', file);
+      formData.append('photo', finalFile);
       try {
         const response = await SharitSession.authFetch('/api/profile/photo', {
           method: 'POST',

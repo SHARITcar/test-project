@@ -12,6 +12,7 @@ bp = Blueprint('profile_settings', __name__)
 logger = logging.getLogger(__name__)
 
 _UPDATABLE_FIELDS = {'first_name', 'last_name', 'avatar_url'}
+MAX_AVATAR_BYTES = 2 * 1024 * 1024  # 2MB, matches group photo limit
 
 
 @bp.route('/api/profile_settings', methods=['GET'])
@@ -110,19 +111,31 @@ def upload_profile_photo():
     if not mimetype.startswith('image/'):
         return jsonify({'error': 'Only image uploads are allowed'}), 400
 
+    file.stream.seek(0, os.SEEK_END)
+    file_size = file.stream.tell()
+    file.stream.seek(0)
+    if file_size > MAX_AVATAR_BYTES:
+        return jsonify({'error': 'Photo is too large (max 2MB). Please use a smaller file.'}), 400
+
     try:
         client = db_for(token)
         bucket_name = os.getenv('AVATAR_BUCKET', 'avatars')
         extension = (file.filename.rsplit('.', 1)[-1] if file.filename and '.' in file.filename else 'jpg').lower()
         object_path = f"{user.id}/{uuid.uuid4()}.{extension}"
 
-        upload_result = client.storage.from_(bucket_name).upload(
-            object_path,
-            file.read(),
-            {'content-type': mimetype, 'upsert': 'true'},
-        )
+        try:
+            upload_result = client.storage.from_(bucket_name).upload(
+                object_path,
+                file.read(),
+                {'content-type': mimetype, 'upsert': 'true'},
+            )
+        except Exception as upload_exc:
+            logger.error(f"Storage upload failed for user {user.id}: {upload_exc}")
+            return jsonify({'error': f"Photo upload failed: {upload_exc}"}), 502
+
         if isinstance(upload_result, dict) and upload_result.get('error'):
-            raise RuntimeError(upload_result['error'])
+            logger.error(f"Storage upload error for user {user.id}: {upload_result['error']}")
+            return jsonify({'error': f"Photo upload failed: {upload_result['error']}"}), 502
 
         public_result = client.storage.from_(bucket_name).get_public_url(object_path)
         if isinstance(public_result, dict):
@@ -130,7 +143,7 @@ def upload_profile_photo():
         else:
             photo_url = str(public_result)
         if not photo_url:
-            raise RuntimeError('Could not resolve uploaded photo URL')
+            return jsonify({'error': 'Could not resolve the uploaded photo URL. Please try again.'}), 502
 
         result = (
             client.table('profiles')

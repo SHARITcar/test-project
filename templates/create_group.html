@@ -62,6 +62,7 @@
           <button type="button" id="groupPhotoAddButton" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-500 text-lg font-bold leading-none text-slate-900 hover:bg-cyan-400" aria-label="Add group photo">+</button>
           <input id="groupPhoto" name="groupPhoto" type="file" accept="image/*" class="hidden">
         </div>
+        <p class="mt-1 text-xs text-slate-500">Max. 2MB</p>
         <p id="groupPhotoError" class="mt-1 text-sm text-red-300"></p>
       </div>
 
@@ -73,19 +74,29 @@
         <p id="priceExplanation" class="mb-4 rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-sm text-slate-300"></p>
 
         <label class="mb-2 block text-sm" for="pricePerKilometer">Set your price *</label>
-        <input id="pricePerKilometer" type="range" min="0.05" max="5" step="0.01" value="0.35" class="w-full">
+        <div class="relative">
+          <input id="pricePerKilometer" type="range" min="0.05" max="1" step="0.01" value="0.35" class="w-full">
+          <div id="suggestedPriceMarker" class="pointer-events-none absolute top-0 hidden h-2 border-l-2 border-dashed border-emerald-400" title="Suggested price"></div>
+        </div>
         <p class="mt-2 flex flex-wrap items-baseline gap-2">
           <span id="priceDisplayWrap" class="text-2xl font-semibold">&euro;<span id="priceDisplay">0.35</span> per km</span>
           <span id="suggestedTag" class="text-sm font-medium text-emerald-400">(suggested)</span>
         </p>
         <p id="pricePerKilometerError" class="mt-1 text-sm text-red-300"></p>
 
+        <label class="mt-3 inline-flex items-center gap-2 text-sm text-slate-400">
+          <input type="checkbox" id="priceOtherToggle">
+          <span>Anders (hoger dan &euro;1,00 per km)</span>
+        </label>
+        <input id="priceOtherInput" type="number" min="1" max="100" step="0.01" class="mt-2 hidden w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2" placeholder="Bedrag per km">
+        <p id="priceOtherError" class="mt-1 hidden text-sm text-red-300"></p>
+
         <div class="mt-5">
           <p class="mb-2 text-sm font-medium">How should this price stay up to date?</p>
           <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button type="button" data-price-mode="auto" class="price-mode-btn rounded-lg border border-slate-700 bg-slate-950 p-3 text-left">
               <span class="font-medium">Auto-adjust</span>
-              <p class="mt-1 text-xs text-slate-400">We recalculate this from your car's efficiency and the fuel price you pick, next time you check your group settings.</p>
+              <p class="mt-1 text-xs text-slate-400">Wordt herberekend op basis van je autoverbruik en de brandstofprijs, telkens wanneer je dit in groepsinstellingen ververst.</p>
             </button>
             <button type="button" data-price-mode="manual" class="price-mode-btn rounded-lg border border-slate-700 bg-slate-950 p-3 text-left">
               <span class="font-medium">Keep it fixed</span>
@@ -103,6 +114,7 @@
         <p id="reminderTypeError" class="mt-1 text-sm text-red-300"></p>
 
         <div id="physicalReminderBlock" class="mt-4 hidden rounded-lg border border-amber-400/40 bg-amber-500/10 p-3">
+          <p class="mb-1 text-sm font-semibold text-amber-100">&euro;10,00 &mdash; one-time cost for the sticker or tag and shipping.</p>
           <p class="mb-3 text-sm text-amber-100">We'll mail your physical reminder here. Enter your postal code and house number and we'll fill in the rest.</p>
           <div class="grid grid-cols-2 gap-2">
             <input id="shippingPostalCode" type="text" maxlength="7" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2" placeholder="Postal code">
@@ -126,7 +138,7 @@
 
           <label class="mt-3 inline-flex items-center gap-2 text-sm">
             <input id="paymentConfirmed" type="checkbox">
-            <span>I confirm payment is completed for physical reminder shipping. <span class="text-slate-400">(Card payment via Stripe coming soon &mdash; confirm manually for now.)</span></span>
+            <span>I confirm the &euro;10,00 payment for physical reminder shipping is completed. <span class="text-slate-400">(Card payment via Stripe coming soon &mdash; confirm manually for now.)</span></span>
           </label>
           <p id="paymentConfirmedError" class="mt-1 text-sm text-red-300"></p>
         </div>
@@ -173,6 +185,32 @@
     </form>
   </main>
 
+  <div id="insuranceModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 p-4">
+    <div class="w-full max-w-lg rounded-xl border border-slate-700 bg-slate-900 p-6">
+      <div class="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-lg font-semibold">Verzekerd op weg</h3>
+          <p class="mt-1 text-sm text-slate-300">Hoe verzeker jij je vriendschap?</p>
+        </div>
+        <button type="button" id="closeInsuranceModal" class="shrink-0 rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="space-y-4">
+        <div class="rounded-lg border border-slate-700 bg-slate-950/60 p-4">
+          <h4 class="mb-1 font-medium text-slate-100">Deelverzekering</h4>
+          <p class="mb-3 text-sm text-slate-300">Deel jij je auto met anderen? Meld je aan bij Vereniging Gedeeld Autogebruik en sluit de autodeelverzekering van Centraal Beheer af. Maakt één van de groepsleden schade aan jouw auto? Dan heeft dat geen gevolgen voor je schadevrijejaren of no-claimkorting.</p>
+          <a href="https://www.centraalbeheer.nl/delen/vereniging-deelauto" target="_blank" rel="noopener" class="inline-block rounded-md border border-cyan-500 px-3 py-2 text-sm text-cyan-300 hover:bg-cyan-500/10">Bekijk deelverzekering</a>
+        </div>
+
+        <div class="rounded-lg border border-slate-700 bg-slate-950/60 p-4">
+          <h4 class="mb-1 font-medium text-slate-100">Leenverzekering</h4>
+          <p class="mb-3 text-sm text-slate-300">Leen je je auto af en toe uit en wil je dat alles goed verzekerd is? Kies dan voor een leenautoverzekering. Voor 1 dag is je auto all-risk verzekerd en heb je geen gedoe indien er iemand schade rijdt.</p>
+          <a href="https://www.google.com/search?q=leen+autoverzekering" target="_blank" rel="noopener" class="inline-block rounded-md border border-cyan-500 px-3 py-2 text-sm text-cyan-300 hover:bg-cyan-500/10">Bekijk leenverzekering</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const STORAGE_KEY = 'create_group_draft_v3';
     const STEPS = ['Basics', 'Price', 'Reminder', 'Agreements', 'Fixed costs'];
@@ -187,27 +225,27 @@
     const FIXED_COST_TYPES = ['Car insurance', 'Road tax', 'Parking permit', 'Fixed depreciation', 'Other'];
     const AGREEMENT_FIELDS = [
       {
-        key: 'keys', id: 'agreementKeys', label: 'Keys',
+        key: 'keys', id: 'agreementKeys', label: 'Keys', lang: 'EN',
         suggestion: 'We keep the keys in one agreed spot so nobody\'s stuck waiting for the last person to get home.',
       },
       {
-        key: 'parking', id: 'agreementParking', label: 'Parking location',
+        key: 'parking', id: 'agreementParking', label: 'Parking location', lang: 'EN',
         suggestion: 'Always return the car to the agreed parking spot after use, so nobody has to hunt for it.',
       },
       {
-        key: 'hygiene', id: 'agreementHygiene', label: 'Hygiene',
+        key: 'hygiene', id: 'agreementHygiene', label: 'Hygiene', lang: 'EN',
         suggestion: 'We always clean the car after use — no trash, crumbs, or mess left behind.',
       },
       {
-        key: 'damage', id: 'agreementDamage', label: 'Damage',
+        key: 'damage', id: 'agreementDamage', label: 'Damage', lang: 'EN',
         suggestion: 'Report any damage right away in the group chat, no matter how small — no blame, just honesty.',
       },
       {
-        key: 'documents', id: 'agreementDocuments', label: 'Vehicle registration certificate location',
+        key: 'documents', id: 'agreementDocuments', label: 'Vehicle registration certificate location', lang: 'EN',
         suggestion: 'The registration certificate (kentekenbewijs) stays in the glove compartment — always put it back after use.',
       },
       {
-        key: 'other', id: 'agreementOther', label: 'Something else',
+        key: 'other', id: 'agreementOther', label: 'Something else', lang: 'EN',
         suggestion: 'Fill the tank if it drops below a quarter, so the next person isn\'t starting on empty.',
       },
     ];
@@ -271,6 +309,10 @@
       vehicleEfficiencyLine: document.getElementById('vehicleEfficiencyLine'),
       priceExplanation: document.getElementById('priceExplanation'),
       pricePerKilometer: document.getElementById('pricePerKilometer'),
+      suggestedPriceMarker: document.getElementById('suggestedPriceMarker'),
+      priceOtherToggle: document.getElementById('priceOtherToggle'),
+      priceOtherInput: document.getElementById('priceOtherInput'),
+      priceOtherError: document.getElementById('priceOtherError'),
       priceDisplay: document.getElementById('priceDisplay'),
       priceDisplayWrap: document.getElementById('priceDisplayWrap'),
       suggestedTag: document.getElementById('suggestedTag'),
@@ -299,6 +341,8 @@
       agreementsList: document.getElementById('agreementsList'),
       takeOverAgreements: document.getElementById('takeOverAgreements'),
       damageInsuranceHelp: document.getElementById('damageInsuranceHelp'),
+      insuranceModal: document.getElementById('insuranceModal'),
+      closeInsuranceModal: document.getElementById('closeInsuranceModal'),
     };
 
     function saveDraft() {
@@ -363,7 +407,7 @@
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const err = new Error(payload.error || 'Request failed');
+        const err = new Error(payload.error || 'Aanvraag mislukt');
         err.payload = payload;
         throw err;
       }
@@ -407,6 +451,8 @@
 
     // ---------- Group photo ----------
 
+    const MAX_GROUP_PHOTO_BYTES = 2 * 1024 * 1024; // keep in sync with backend MAX_GROUP_PHOTO_BYTES
+
     function openPhotoPicker() {
       els.groupPhoto.click();
     }
@@ -438,10 +484,24 @@
     function applySuggestedPrice() {
       const suggested = computeSuggestedPricePerKm();
       state.draft.pricePerKilometer = suggested;
-      els.pricePerKilometer.value = suggested;
+      const sliderMax = Number(els.pricePerKilometer.max);
+      if (suggested > sliderMax) {
+        setPriceOtherMode(true);
+        els.priceOtherInput.value = suggested.toFixed(2);
+      } else {
+        setPriceOtherMode(false);
+        els.pricePerKilometer.value = suggested;
+      }
       els.priceDisplay.textContent = suggested.toFixed(2);
       renderPriceModeVisuals();
       saveDraft();
+    }
+
+    function setPriceOtherMode(useOther) {
+      els.priceOtherToggle.checked = useOther;
+      els.pricePerKilometer.classList.toggle('hidden', useOther);
+      els.priceOtherInput.classList.toggle('hidden', !useOther);
+      updateSuggestedPriceMarker();
     }
 
     function renderVehicleEfficiencyLine() {
@@ -460,6 +520,26 @@
           goToStep(0);
         });
       }
+    }
+
+    function updateSuggestedPriceMarker() {
+      const marker = els.suggestedPriceMarker;
+      const hasVehicle = Boolean(state.vehicleInfo && state.vehicleInfo.brand);
+      if (!hasVehicle || els.priceOtherToggle.checked) {
+        marker.classList.add('hidden');
+        return;
+      }
+      const suggested = computeSuggestedPricePerKm();
+      const min = Number(els.pricePerKilometer.min);
+      const max = Number(els.pricePerKilometer.max);
+      if (suggested < min || suggested > max) {
+        marker.classList.add('hidden');
+        return;
+      }
+      const fraction = (suggested - min) / (max - min);
+      const thumbWidth = 16;
+      marker.style.left = `calc(${thumbWidth / 2}px + (100% - ${thumbWidth}px) * ${fraction})`;
+      marker.classList.remove('hidden');
     }
 
     function renderPriceModeVisuals() {
@@ -504,13 +584,21 @@
         }
         renderPriceExplanation();
       });
+
+      updateSuggestedPriceMarker();
     }
 
     // ---------- Reminder / physical address ----------
 
+    function getSortedReminderTypes() {
+      // Physical reminder listed first (it's the recommended option),
+      // regardless of the alphabetical order the backend returns.
+      return state.reminderTypes.slice().sort((a, b) => (b.is_physical ? 1 : 0) - (a.is_physical ? 1 : 0));
+    }
+
     function renderReminderOptions() {
       els.reminderTypeOptions.innerHTML = '';
-      state.reminderTypes.forEach((option) => {
+      getSortedReminderTypes().forEach((option) => {
         const selected = state.draft.reminderType === option.name;
         const wrapper = document.createElement('label');
         wrapper.className = `block cursor-pointer rounded-lg border p-3 ${selected ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700 bg-slate-950'}`;
@@ -618,7 +706,7 @@
             <label class="block text-sm font-medium" for="${field.id}">${field.label}</label>
             <button type="button" data-suggest="${field.key}" class="shrink-0 text-xs font-medium text-cyan-300 hover:text-cyan-200">Use suggestion</button>
           </div>
-          <textarea id="${field.id}" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2" rows="2" placeholder="${field.label}">${state.draft.internalAgreements[field.key] || ''}</textarea>
+          <textarea id="${field.id}" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2" rows="2" placeholder="(${field.lang}) ${field.suggestion}">${state.draft.internalAgreements[field.key] || ''}</textarea>
         `;
         const textarea = wrapper.querySelector('textarea');
         textarea.addEventListener('input', () => {
@@ -660,13 +748,20 @@
               <option value="" ${row.type ? '' : 'selected'} disabled>Choose type&hellip;</option>
               ${typeOptions}
             </select>
-            <div class="relative md:col-span-5">
+            <div class="relative md:col-span-3">
               <span class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">&euro;</span>
               <input data-kind="amount" data-index="${index}" type="number" min="0" step="0.01" value="${row.amount || ''}" class="w-full rounded-md border border-slate-700 bg-slate-950 py-2 pl-6 pr-2" placeholder="0.00">
             </div>
+            <select data-kind="period" data-index="${index}" class="rounded-md border border-slate-700 bg-slate-950 px-2 py-2 md:col-span-2">
+              <option value="month" ${row.period === 'month' ? 'selected' : ''}>per maand</option>
+              <option value="quarter" ${row.period === 'quarter' ? 'selected' : ''}>per kwartaal</option>
+              <option value="year" ${!row.period || row.period === 'year' ? 'selected' : ''}>per jaar</option>
+            </select>
             <button type="button" data-remove="${index}" class="rounded-md border border-red-500 px-2 py-2 text-red-300 md:col-span-1">X</button>
+            <input data-kind="paidByName" data-index="${index}" type="text" value="${row.paidByName || ''}" placeholder="Betaler (optioneel)" class="rounded-md border border-slate-700 bg-slate-950 px-2 py-2 md:col-span-6">
             ${row.type === 'Other' ? `<input data-kind="customTypeLabel" data-index="${index}" type="text" value="${row.customTypeLabel || ''}" placeholder="Describe the cost" class="rounded-md border border-slate-700 bg-slate-950 px-2 py-2 md:col-span-12">` : ''}
           </div>
+          <p class="mt-1 text-xs text-slate-500">Betaler kan later nog gekoppeld worden aan een groepslid via groepsinstellingen.</p>
           <div class="mt-2 flex flex-wrap gap-4 text-sm">
             <label class="inline-flex items-center gap-2">
               <input type="radio" name="splitMethod-${index}" data-kind="splitMethod" data-index="${index}" value="equal" ${row.splitMethod !== 'per_km' ? 'checked' : ''}>
@@ -686,7 +781,7 @@
         els.fixedCostsList.appendChild(div);
       });
 
-      els.fixedCostsList.querySelectorAll('input[data-kind="amount"], input[data-kind="customTypeLabel"]').forEach((input) => {
+      els.fixedCostsList.querySelectorAll('input[data-kind="amount"], input[data-kind="customTypeLabel"], input[data-kind="paidByName"]').forEach((input) => {
         input.addEventListener('input', (event) => {
           const index = Number(event.target.dataset.index);
           const kind = event.target.dataset.kind;
@@ -701,6 +796,14 @@
           state.draft.fixedCosts[index].type = event.target.value;
           saveDraft();
           renderFixedCosts();
+        });
+      });
+
+      els.fixedCostsList.querySelectorAll('select[data-kind="period"]').forEach((select) => {
+        select.addEventListener('change', (event) => {
+          const index = Number(event.target.dataset.index);
+          state.draft.fixedCosts[index].period = event.target.value;
+          saveDraft();
         });
       });
 
@@ -767,11 +870,15 @@
 
       if (step === 0) {
         if (!state.draft.groupName.trim()) {
-          els.groupNameError.textContent = 'Group name is required.';
+          els.groupNameError.textContent = 'Groepsnaam is verplicht.';
           ok = false;
         }
         if (state.groupPhotoFile && !String(state.groupPhotoFile.type || '').startsWith('image/')) {
-          els.groupPhotoError.textContent = 'Only image uploads are allowed.';
+          els.groupPhotoError.textContent = 'Alleen afbeeldingen zijn toegestaan.';
+          ok = false;
+        }
+        if (state.groupPhotoFile && state.groupPhotoFile.size > MAX_GROUP_PHOTO_BYTES) {
+          els.groupPhotoError.textContent = 'Foto is te groot (max. 2MB). Probeer een kleiner bestand.';
           ok = false;
         }
       }
@@ -839,6 +946,8 @@
             amount: Number(c.amount),
             description: c.description || '',
             splitMethod: c.splitMethod === 'per_km' ? 'per_km' : 'equal',
+            paidByName: (c.paidByName || '').trim(),
+            period: c.period === 'month' || c.period === 'quarter' ? c.period : 'year',
           })),
         shippingAddress: address ? {
           street: address.street,
@@ -901,7 +1010,7 @@
         if (fieldErrors.shippingAddress) els.shippingAddressError.textContent = fieldErrors.shippingAddress;
         if (fieldErrors.paymentConfirmed) els.paymentConfirmedError.textContent = fieldErrors.paymentConfirmed;
 
-        const message = error.message || 'We could not create the group. Please retry.';
+        const message = error.message || 'Er ging iets mis bij het aanmaken van je groep. Probeer het opnieuw.';
         showBanner(message);
       } finally {
         state.submitting = false;
@@ -926,14 +1035,32 @@
 
       els.groupPhotoTrigger.addEventListener('click', openPhotoPicker);
       els.groupPhotoAddButton.addEventListener('click', openPhotoPicker);
-      els.groupPhoto.addEventListener('change', () => {
-        state.groupPhotoFile = els.groupPhoto.files[0] || null;
-        if (state.groupPhotoFile && !String(state.groupPhotoFile.type || '').startsWith('image/')) {
-          els.groupPhotoError.textContent = 'Only image uploads are allowed.';
+      els.groupPhoto.addEventListener('change', async () => {
+        const file = els.groupPhoto.files[0] || null;
+        els.groupPhotoError.textContent = '';
+
+        if (!file) {
           state.groupPhotoFile = null;
-        } else {
-          els.groupPhotoError.textContent = '';
+          renderGroupPhotoPreview();
+          return;
         }
+
+        if (!String(file.type || '').startsWith('image/')) {
+          els.groupPhotoError.textContent = 'Alleen afbeeldingen zijn toegestaan.';
+          state.groupPhotoFile = null;
+          renderGroupPhotoPreview();
+          return;
+        }
+
+        const finalFile = await SharitImageCompress.compressIfNeeded(file, MAX_GROUP_PHOTO_BYTES);
+        if (finalFile.size > MAX_GROUP_PHOTO_BYTES) {
+          els.groupPhotoError.textContent = 'Foto is te groot (max. 2MB). Probeer een kleiner bestand.';
+          state.groupPhotoFile = null;
+          renderGroupPhotoPreview();
+          return;
+        }
+
+        state.groupPhotoFile = finalFile;
         renderGroupPhotoPreview();
       });
 
@@ -960,6 +1087,40 @@
         saveDraft();
       });
 
+      els.priceOtherToggle.addEventListener('change', () => {
+        const useOther = els.priceOtherToggle.checked;
+        setPriceOtherMode(useOther);
+        if (useOther) {
+          els.priceOtherInput.value = state.draft.pricePerKilometer > 1 ? state.draft.pricePerKilometer.toFixed(2) : '';
+          els.priceOtherInput.focus();
+        } else {
+          state.draft.pricePerKmMode = 'manual';
+          state.draft.pricePerKilometer = Number(els.pricePerKilometer.value);
+          els.priceDisplay.textContent = Number(state.draft.pricePerKilometer).toFixed(2);
+          els.priceOtherError.classList.add('hidden');
+          renderPriceModeToggle();
+          renderPriceModeVisuals();
+          saveDraft();
+        }
+      });
+
+      els.priceOtherInput.addEventListener('input', () => {
+        state.draft.pricePerKmMode = 'manual';
+        const value = Number(els.priceOtherInput.value);
+        state.draft.pricePerKilometer = value;
+        els.priceDisplay.textContent = Number.isFinite(value) ? value.toFixed(2) : '0.00';
+        if (value > 1) {
+          els.priceOtherError.classList.add('hidden');
+          els.pricePerKilometerError.textContent = '';
+        } else {
+          els.priceOtherError.textContent = 'Vul een bedrag hoger dan €1,00 in.';
+          els.priceOtherError.classList.remove('hidden');
+        }
+        renderPriceModeToggle();
+        renderPriceModeVisuals();
+        saveDraft();
+      });
+
       els.takeOverAgreements.addEventListener('click', () => {
         AGREEMENT_FIELDS.forEach((field) => {
           state.draft.internalAgreements[field.key] = field.suggestion;
@@ -968,13 +1129,24 @@
         renderAgreements();
       });
 
-      els.damageInsuranceHelp.addEventListener('click', () => {
-        // TODO: point this at a real shared-car insurance info page/partner once one is chosen.
-        alert('More info coming soon.');
+      function openInsuranceModal() {
+        els.insuranceModal.classList.remove('hidden');
+        els.insuranceModal.classList.add('flex');
+      }
+
+      function closeInsuranceModal() {
+        els.insuranceModal.classList.add('hidden');
+        els.insuranceModal.classList.remove('flex');
+      }
+
+      els.damageInsuranceHelp.addEventListener('click', openInsuranceModal);
+      els.closeInsuranceModal.addEventListener('click', closeInsuranceModal);
+      els.insuranceModal.addEventListener('click', (event) => {
+        if (event.target === els.insuranceModal) closeInsuranceModal();
       });
 
       els.addFixedCost.addEventListener('click', () => {
-        state.draft.fixedCosts.push({ type: '', amount: '', description: '', splitMethod: 'equal', customTypeLabel: '' });
+        state.draft.fixedCosts.push({ type: '', amount: '', description: '', splitMethod: 'equal', customTypeLabel: '', paidByName: '', period: 'year' });
         saveDraft();
         renderFixedCosts();
       });
@@ -1081,7 +1253,8 @@
         const reminderPayload = await fetchJson('/api/reminder-types');
         state.reminderTypes = reminderPayload.reminder_types || [];
         if (!state.draft.reminderType && state.reminderTypes.length > 0) {
-          state.draft.reminderType = state.reminderTypes[0].name;
+          const defaultOption = state.reminderTypes.find((r) => !r.is_physical) || state.reminderTypes[0];
+          state.draft.reminderType = defaultOption.name;
           saveDraft();
         }
         renderReminderOptions();

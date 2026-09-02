@@ -880,6 +880,37 @@ class GroupsRouteTests(unittest.TestCase):
         self.assertEqual(payload["price_per_km_mode"], "auto")
         self.assertEqual(payload["fuel_country"], "BE")
 
+    def test_group_detail_patch_rejects_invalid_large_distance_threshold(self):
+        self._setup_valid_session()
+        db_client = MagicMock()
+        db_client.table.side_effect = [_mock_table([{"id": "membership-1", "role": "owner"}])]
+        self.fake_sc.db_for.return_value = db_client
+
+        response = self.client.patch(
+            "/api/groups/group-123",
+            json={"largeDistanceThresholdKm": -5},
+            headers={"Authorization": "Bearer test-access-token"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("largeDistanceThresholdKm", response.get_json()["fieldErrors"])
+
+    def test_group_detail_patch_updates_large_distance_threshold(self):
+        self._setup_valid_session()
+        db_client = MagicMock()
+        db_client.table.side_effect = [
+            _mock_table([{"id": "membership-1", "role": "owner"}]),
+            _mock_table([{"id": "group-123", "large_distance_threshold_km": 100}]),
+        ]
+        self.fake_sc.db_for.return_value = db_client
+
+        response = self.client.patch(
+            "/api/groups/group-123",
+            json={"largeDistanceThresholdKm": 100},
+            headers={"Authorization": "Bearer test-access-token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["group"]["large_distance_threshold_km"], 100)
+
     def test_list_groups_success(self):
         self._setup_valid_session()
         db_client = MagicMock()
@@ -889,6 +920,7 @@ class GroupsRouteTests(unittest.TestCase):
                            "price_per_km": 0.45, "reminder_type": "Push notification",
                            "invite_link": "http://localhost:5000/invite/example",
                            "created_at": "2026-04-29T00:00:00Z", "created_by": "user-123"}]),
+            _mock_table([]),  # group_fixed_costs check for a missing-payer reminder
             _mock_table({"id": "user-123", "active_group_id": "group-123"}),
         ]
         self.fake_sc.db_for.return_value = db_client
@@ -901,6 +933,7 @@ class GroupsRouteTests(unittest.TestCase):
         payload = response.get_json()
         self.assertEqual(len(payload["groups"]), 1)
         self.assertEqual(payload["active_group_id"], "group-123")
+        self.assertFalse(payload["groups"][0]["has_pending_fixed_cost_payer"])
 
     def test_invite_preview_success(self):
         self._setup_valid_session()

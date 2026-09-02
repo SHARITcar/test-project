@@ -36,8 +36,9 @@ def change_password():
     current_password = data.get('current_password', '')
     new_password = data.get('new_password', '')
     confirm_password = data.get('confirm_password', '')
+    refresh_token = data.get('refresh_token', '')
 
-    if not current_password or not new_password or not confirm_password:
+    if not current_password or not new_password or not confirm_password or not refresh_token:
         return jsonify({'error': 'Missing required fields'}), 400
 
     if new_password != confirm_password:
@@ -49,7 +50,10 @@ def change_password():
         }), 400
 
     try:
-        # Re-authenticate to verify the current password is correct
+        # Re-authenticate to verify the current password is correct. This
+        # creates its own throwaway session -- deliberately never used below,
+        # so it doesn't become "the session that changed the password" and
+        # cause Supabase to revoke the caller's real session instead of it.
         verify_resp = supabase.auth.sign_in_with_password({
             'email': user.email,
             'password': current_password,
@@ -58,10 +62,12 @@ def change_password():
         if not verify_resp.session:
             return jsonify({'error': 'Current password is incorrect'}), 400
 
-        # Use the freshly verified session to update the password
-        session = verify_resp.session
+        # Perform the actual update on the caller's own session (the one
+        # whose tokens the browser already holds), so Supabase's "revoke
+        # other sessions" behavior on password change treats this browser
+        # tab as the session that made the change, not as another device.
         client = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_ANON_KEY"])
-        client.auth.set_session(session.access_token, session.refresh_token)
+        client.auth.set_session(access_token, refresh_token)
         client.auth.update_user({'password': new_password})
 
         return jsonify({'message': 'Password updated successfully'}), 200

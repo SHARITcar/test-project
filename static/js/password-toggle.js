@@ -22,5 +22,28 @@
     });
   }
 
-  global.SharitPasswordToggle = { wire: wire };
+  /**
+   * Shows a warning element while Caps Lock is on and the given password
+   * input has focus. Expects the CapsLock modifier state via keyboard
+   * events, so it only updates on keydown/keyup (not e.g. on programmatic
+   * focus or autofill).
+   */
+  function watchCapsLock(inputId, warningId) {
+    const input = document.getElementById(inputId);
+    const warning = document.getElementById(warningId);
+    if (!input || !warning) return;
+
+    function update(event) {
+      if (typeof event.getModifierState !== 'function') return;
+      warning.classList.toggle('hidden', !event.getModifierState('CapsLock'));
+    }
+
+    input.addEventListener('keydown', update);
+    input.addEventListener('keyup', update);
+    input.addEventListener('blur', function () {
+      warning.classList.add('hidden');
+    });
+  }
+
+  global.SharitPasswordToggle = { wire: wire, watchCapsLock: watchCapsLock };
 })(window);

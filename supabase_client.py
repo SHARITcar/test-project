@@ -1,5 +1,5 @@
 import os
-from supabase import create_client, Client
+from supabase import create_client, Client, ClientOptions
 
 _url: str = os.getenv("SUPABASE_URL", "")
 _anon_key: str = os.getenv("SUPABASE_ANON_KEY", "")
@@ -31,10 +31,16 @@ def get_token_from_request(request) -> str | None:
 
 def db_for(access_token: str) -> Client:
     """
-    Return a Supabase client with the user's JWT set on the PostgREST layer.
-    This ensures RLS policies evaluate auth.uid() correctly for each user.
-    Use this for ALL table queries inside request handlers.
+    Return a Supabase client with the user's JWT set on every sub-client
+    (PostgREST, Storage, ...), so RLS policies evaluate auth.uid()/auth.role()
+    correctly for each user. Passing headers via ClientOptions at construction
+    time (rather than only client.postgrest.auth()) is required for this to
+    reach Storage too -- otherwise storage.* calls silently authenticate as
+    the anon key and fail any policy requiring an authenticated user.
+    Use this for ALL table queries and storage uploads inside request handlers.
     """
-    client = create_client(_url, _anon_key)
-    client.postgrest.auth(access_token)
-    return client
+    return create_client(
+        _url,
+        _anon_key,
+        options=ClientOptions(headers={"Authorization": f"Bearer {access_token}"}),
+    )

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+{% block lang %}nl{% endblock %}
 {% block title %}Welkom bij SHARIT{% endblock %}
 {% block body_class %}min-h-screen bg-shell text-slate-100 flex items-center justify-center p-4{% endblock %}
 {% block head_extra %}
@@ -14,24 +15,134 @@
       <span class="onboarding-dot h-1.5 w-6 rounded-full bg-slate-100" data-dot="0"></span>
       <span class="onboarding-dot h-1.5 w-6 rounded-full bg-slate-700" data-dot="1"></span>
       <span class="onboarding-dot h-1.5 w-6 rounded-full bg-slate-700" data-dot="2"></span>
+      <span class="onboarding-dot h-1.5 w-6 rounded-full bg-slate-700" data-dot="3"></span>
+      <span class="onboarding-dot h-1.5 w-6 rounded-full bg-slate-700" data-dot="4"></span>
+      <span class="onboarding-dot h-1.5 w-6 rounded-full bg-slate-700" data-dot="5"></span>
+      <span class="onboarding-dot h-1.5 w-6 rounded-full bg-slate-700" data-dot="6"></span>
+      <span class="onboarding-dot h-1.5 w-6 rounded-full bg-slate-700" data-dot="7"></span>
+      <span class="onboarding-dot h-1.5 w-6 rounded-full bg-slate-700" data-dot="8"></span>
     </div>
 
+    <!-- Intro -->
     <section id="screen1" class="rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
-      <h1 class="mb-4 text-2xl font-bold">Hoe werkt SHARIT?</h1>
-      <p class="mb-8 text-slate-300">SHARIT helpt je kilometers en kosten van jullie gezamenlijke deelauto eerlijk te verdelen.</p>
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-accent">Onboarding</p>
+      <h1 class="mb-6 text-2xl font-bold">Hoe werkt SHARIT?</h1>
+
+      <div class="mb-8 space-y-5 text-left">
+        <div class="flex items-start gap-4">
+          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-accent/30 bg-accent/10 text-accent">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 1 1 9-9" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-2.5" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 12l3.5-3.5" />
+              <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" />
+              <path stroke-linecap="round" d="M5.5 8.5l1.4 1.4M19.5 15.5l-1.6-.4" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-100">Kilometerstanden bijhouden</h3>
+            <p class="mt-0.5 text-sm text-slate-400">Houd tijdens je rit gemakkelijk de begin of/en eind kilometerstand bij.</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-4">
+          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-accent/30 bg-accent/10 text-accent">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="6.5" width="18" height="11" rx="2" />
+              <circle cx="12" cy="12" r="2.75" />
+              <path stroke-linecap="round" d="M6.5 9.5v.01M17.5 14.5v.01" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-100">Kosten verdelen</h3>
+            <p class="mt-0.5 text-sm text-slate-400">Kosten als benzine voer je in en worden verdeeld over de deelnemers.</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-4">
+          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-accent/30 bg-accent/10 text-accent">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1" />
+              <circle cx="7" cy="8" r="3" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 20v-1a4 4 0 0 0-3-3.87" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 5.13a3 3 0 0 1 0 5.75" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-100">Volledig overzicht</h3>
+            <p class="mt-0.5 text-sm text-slate-400">Alle ritjes en kosten in één overzicht. Direct inzicht in wie wat moet betalen.</p>
+          </div>
+        </div>
+      </div>
+
       <button id="nextButton1" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Volgende</button>
     </section>
 
+    <!-- Step 1 -->
     <section id="screen2" class="hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
-      <h1 class="mb-4 text-2xl font-bold">Rit loggen, klaar</h1>
-      <p class="mb-8 text-slate-300">Voer de kilometerstand in bij vertrek en aankomst. SHARIT berekent de afstand en kosten automatisch, en verdeelt ze eerlijk over de rijders.</p>
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-accent">Stap 1</p>
+      <h1 class="mb-4 text-2xl font-bold">Vorm een groep</h1>
+      <p class="mb-8 text-slate-300">Maak een nieuwe groep waarmee je een auto wilt delen, of neem deel aan een bestaande groep via de uitnodiging link.</p>
       <button id="nextButton2" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Volgende</button>
     </section>
 
+    <!-- Step 2 -->
     <section id="screen3" class="hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
-      <h1 class="mb-4 text-2xl font-bold">Vorm een groep</h1>
-      <p class="mb-8 text-slate-300">Maak een nieuwe groep aan, of neem deel via een uitnodigingslink. Iedereen die meerijdt of meebetaalt, meldt zich aan bij dezelfde groep.</p>
-      <button id="startButton" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Aan de slag</button>
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-accent">Stap 2</p>
+      <h1 class="mb-4 text-2xl font-bold">Registreer iedereen</h1>
+      <p class="mb-8 text-slate-300">Alle groepsleden moeten aangemeld zijn bij SHARIT via de app. Het is mogelijk om in meerdere autogroepen te zitten.</p>
+      <button id="nextButton3" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Volgende</button>
+    </section>
+
+    <!-- Step 3 -->
+    <section id="screen4" class="hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-accent">Stap 3</p>
+      <h1 class="mb-4 text-2xl font-bold">Voer standen in</h1>
+      <p class="mb-8 text-slate-300">Voer aan het begin en/of eind van elke rit de kilometerstand in. Vul hier niet de dagstand in, maar de totale kilometerstand.</p>
+      <button id="nextButton4" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Volgende</button>
+    </section>
+
+    <!-- Step 4 -->
+    <section id="screen5" class="hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-accent">Stap 4</p>
+      <h1 class="mb-4 text-2xl font-bold">Rijden maar!</h1>
+      <p class="mb-8 text-slate-300">Kilometerstand ingevuld? Rijden maar! Aan het eind van de rit hoeft de kilometerstand niet nogmaals ingevuld te worden.</p>
+      <button id="nextButton5" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Volgende</button>
+    </section>
+
+    <!-- Step 5 -->
+    <section id="screen6" class="hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-accent">Stap 5</p>
+      <h1 class="mb-4 text-2xl font-bold">Voer kosten in</h1>
+      <p class="mb-8 text-slate-300">Zowel variabele kosten (bijv. tanken) als vaste kosten (bijv. wegenbelasting) kunnen op elk moment ingevoerd worden.</p>
+      <button id="nextButton6" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Volgende</button>
+    </section>
+
+    <!-- Step 6 -->
+    <section id="screen7" class="hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-accent">Stap 6</p>
+      <h1 class="mb-4 text-2xl font-bold">Inzicht in gebruik</h1>
+      <p class="mb-8 text-slate-300">De gereden ritten en de gemaakte kosten per persoon zijn terug te vinden in het overzicht van de groep.</p>
+      <button id="nextButton7" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Volgende</button>
+    </section>
+
+    <!-- Insurance -->
+    <section id="screen8" class="hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-accent">Deelverzekering</p>
+      <h1 class="mb-4 text-2xl font-bold">Verzekerd op weg?</h1>
+      <p class="mb-8 text-slate-300">
+        Niet de pineut zijn als iemand anders schade rijdt? Er zijn passende verzekeringen voor gedeeld autogebruik,
+        <a href="#" id="insuranceInfoLink" class="text-green-400 underline hover:text-green-300">klik hier</a>
+        voor meer informatie.
+      </p>
+      <button id="nextButton8" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Volgende</button>
+    </section>
+
+    <!-- End -->
+    <section id="screen9" class="hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-8 text-center">
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-accent">Einde onboarding</p>
+      <h1 class="mb-8 text-2xl font-bold">Veel deelplezier!</h1>
+      <button id="startButton" type="button" class="w-full rounded-full bg-slate-100 px-4 py-3 font-semibold text-slate-900 hover:bg-white">Starten met SHARIT</button>
     </section>
 
     <div id="loadingState" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
@@ -43,6 +154,8 @@
   </main>
 
   <script>
+    const TOTAL_SCREENS = 9;
+
     function getInviteTokenContext() {
       const params = new URLSearchParams(window.location.search);
       return (params.get('invite') || window.sessionStorage.getItem('pending_invite_token') || '').trim();
@@ -102,16 +215,24 @@
     }
 
     function goToScreen(index) {
-      [0, 1, 2].forEach((i) => {
+      for (let i = 0; i < TOTAL_SCREENS; i += 1) {
         document.getElementById(`screen${i + 1}`).classList.toggle('hidden', i !== index);
-        document.querySelector(`.onboarding-dot[data-dot="${i}"]`).classList.toggle('bg-slate-100', i === index);
-        document.querySelector(`.onboarding-dot[data-dot="${i}"]`).classList.toggle('bg-slate-700', i !== index);
-      });
+        const dot = document.querySelector(`.onboarding-dot[data-dot="${i}"]`);
+        dot.classList.toggle('bg-slate-100', i === index);
+        dot.classList.toggle('bg-slate-700', i !== index);
+      }
     }
 
-    document.getElementById('nextButton1').addEventListener('click', () => goToScreen(1));
-    document.getElementById('nextButton2').addEventListener('click', () => goToScreen(2));
+    for (let i = 1; i < TOTAL_SCREENS; i += 1) {
+      document.getElementById(`nextButton${i}`).addEventListener('click', () => goToScreen(i));
+    }
     document.getElementById('startButton').addEventListener('click', completeOnboarding);
+
+    // TODO: point this at a real shared-car insurance info page/partner once one is chosen.
+    document.getElementById('insuranceInfoLink').addEventListener('click', (event) => {
+      event.preventDefault();
+      alert('More info coming soon.');
+    });
 
     loadCurrentUser().then((userProfile) => {
       if (!userProfile) return;

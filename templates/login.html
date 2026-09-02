@@ -67,6 +67,7 @@
                                 </svg>
                             </button>
                         </div>
+                        <p id="password-capslock" class="mt-1 hidden text-xs text-amber-400">Caps Lock staat aan</p>
                         <div id="password-error" class="mt-1 text-sm text-red-400 hidden" role="alert"></div>
                     </div>
 
@@ -139,6 +140,7 @@
 
     <script>
         SharitPasswordToggle.wire('password', 'password-toggle');
+        SharitPasswordToggle.watchCapsLock('password', 'password-capslock');
 
         function getInviteTokenFromQuery() {
             const params = new URLSearchParams(window.location.search);

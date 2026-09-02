@@ -101,6 +101,42 @@
       </section>
 
       <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Fixed costs</h2>
+          <button type="button" id="addFixedCostButton" class="rounded-md border border-cyan-500 px-3 py-2 text-sm text-cyan-300 hover:bg-cyan-500/10">Add cost</button>
+        </div>
+        <p id="fixedCostsEmpty" class="hidden text-sm text-slate-400">No fixed costs added yet.</p>
+        <div id="fixedCostsSettingsList" class="space-y-3"></div>
+
+        <div id="addFixedCostForm" class="mt-4 hidden rounded-lg border border-slate-700 bg-slate-950/60 p-3">
+          <div class="grid gap-2 md:grid-cols-12">
+            <select id="newFixedCostType" class="rounded-md border border-slate-700 bg-slate-950 px-2 py-2 md:col-span-6">
+              <option value="" selected disabled>Choose type&hellip;</option>
+              <option value="Car insurance">Car insurance</option>
+              <option value="Road tax">Road tax</option>
+              <option value="Parking permit">Parking permit</option>
+              <option value="Fixed depreciation">Fixed depreciation</option>
+            </select>
+            <div class="relative md:col-span-3">
+              <span class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">&euro;</span>
+              <input id="newFixedCostAmount" type="number" min="0" step="0.01" class="w-full rounded-md border border-slate-700 bg-slate-950 py-2 pl-6 pr-2" placeholder="0.00">
+            </div>
+            <select id="newFixedCostPeriod" class="rounded-md border border-slate-700 bg-slate-950 px-2 py-2 md:col-span-3">
+              <option value="month">per maand</option>
+              <option value="quarter">per kwartaal</option>
+              <option value="year" selected>per jaar</option>
+            </select>
+            <input id="newFixedCostPaidBy" type="text" placeholder="Betaler (optioneel)" class="rounded-md border border-slate-700 bg-slate-950 px-2 py-2 md:col-span-12">
+          </div>
+          <p id="newFixedCostError" class="mt-2 hidden text-sm text-red-300"></p>
+          <div class="mt-3 flex gap-2">
+            <button type="button" id="saveNewFixedCost" class="rounded-md bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-900">Save</button>
+            <button type="button" id="cancelNewFixedCost" class="rounded-md border border-slate-700 px-3 py-2 text-sm">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
         <h2 class="mb-4 text-lg font-semibold">Members</h2>
         <ul id="membersList" class="space-y-2"></ul>
       </section>
@@ -136,6 +172,7 @@
       reminderTypes: [],
       priceMode: 'manual',
       fuelCountry: 'NL',
+      fixedCosts: [],
     };
 
     const els = {
@@ -171,6 +208,17 @@
       saveButton: document.getElementById('saveButton'),
       membersList: document.getElementById('membersList'),
       leaveButton: document.getElementById('leaveButton'),
+      fixedCostsEmpty: document.getElementById('fixedCostsEmpty'),
+      fixedCostsSettingsList: document.getElementById('fixedCostsSettingsList'),
+      addFixedCostButton: document.getElementById('addFixedCostButton'),
+      addFixedCostForm: document.getElementById('addFixedCostForm'),
+      newFixedCostType: document.getElementById('newFixedCostType'),
+      newFixedCostAmount: document.getElementById('newFixedCostAmount'),
+      newFixedCostPeriod: document.getElementById('newFixedCostPeriod'),
+      newFixedCostPaidBy: document.getElementById('newFixedCostPaidBy'),
+      newFixedCostError: document.getElementById('newFixedCostError'),
+      saveNewFixedCost: document.getElementById('saveNewFixedCost'),
+      cancelNewFixedCost: document.getElementById('cancelNewFixedCost'),
     };
 
     function setVisible(view) {
@@ -390,6 +438,77 @@
       renderMembers();
     }
 
+    const PERIOD_LABELS = { month: 'per maand', quarter: 'per kwartaal', year: 'per jaar' };
+    const MISSING_PAYER_REMINDER_DAYS = 2;
+
+    function formatCurrency(amount) {
+      return `€${Number(amount).toFixed(2)}`;
+    }
+
+    async function loadFixedCosts() {
+      const payload = await fetchJson(`/api/groups/${encodeURIComponent(state.groupId)}/fixed-costs`);
+      state.fixedCosts = payload.fixedCosts || [];
+      renderFixedCostsSettings();
+    }
+
+    function renderFixedCostsSettings() {
+      els.fixedCostsSettingsList.innerHTML = '';
+      els.fixedCostsEmpty.classList.toggle('hidden', state.fixedCosts.length > 0);
+
+      state.fixedCosts.forEach((cost) => {
+        const row = document.createElement('div');
+        const overdue = cost.missingPayerOverdue;
+        row.className = `rounded-lg border p-3 ${overdue ? 'border-amber-400/50 bg-amber-500/10' : 'border-slate-700 bg-slate-950/60'}`;
+
+        const periodLabel = PERIOD_LABELS[cost.period] || PERIOD_LABELS.year;
+        const annualNote = cost.period !== 'year'
+          ? `<span class="text-slate-400"> (${formatCurrency(cost.annualizedAmount)} per jaar)</span>`
+          : '';
+
+        row.innerHTML = `
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <p class="font-medium">${cost.costType}</p>
+            <p>${formatCurrency(cost.amount)} <span class="text-slate-400">${periodLabel}</span>${annualNote}</p>
+          </div>
+          ${cost.description ? `<p class="mt-1 text-sm text-slate-400">${cost.description}</p>` : ''}
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            <input data-payer-input type="text" value="${cost.paidByName || ''}" placeholder="Betaler" class="rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-sm">
+            <button type="button" data-save-payer class="rounded-md border border-cyan-500 px-2 py-1 text-xs text-cyan-300 hover:bg-cyan-500/10">Opslaan</button>
+            <button type="button" data-delete-cost class="ml-auto rounded-md border border-red-500 px-2 py-1 text-xs text-red-300 hover:bg-red-500/10">Verwijderen</button>
+          </div>
+          ${overdue ? `<p class="mt-2 text-xs text-amber-200">Nog geen betaler toegewezen — dit staat al ${MISSING_PAYER_REMINDER_DAYS}+ dagen open.</p>` : ''}
+        `;
+
+        row.querySelector('[data-save-payer]').addEventListener('click', async () => {
+          const input = row.querySelector('[data-payer-input]');
+          try {
+            await fetchJson(`/api/groups/${encodeURIComponent(state.groupId)}/fixed-costs/${encodeURIComponent(cost.id)}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ paidByName: input.value }),
+            });
+            await loadFixedCosts();
+          } catch (error) {
+            alert(error.message || 'Opslaan is niet gelukt.');
+          }
+        });
+
+        row.querySelector('[data-delete-cost]').addEventListener('click', async () => {
+          if (!window.confirm('Deze vaste kost verwijderen?')) return;
+          try {
+            await fetchJson(`/api/groups/${encodeURIComponent(state.groupId)}/fixed-costs/${encodeURIComponent(cost.id)}`, {
+              method: 'DELETE',
+            });
+            await loadFixedCosts();
+          } catch (error) {
+            alert(error.message || 'Verwijderen is niet gelukt.');
+          }
+        });
+
+        els.fixedCostsSettingsList.appendChild(row);
+      });
+    }
+
     async function loadGroup() {
       setVisible('loading');
       if (!state.token) {
@@ -415,6 +534,7 @@
 
         renderGroup();
         await loadMembers();
+        await loadFixedCosts();
         setVisible('content');
       } catch (error) {
         setVisible('error');
@@ -498,6 +618,47 @@
 
     els.saveButton.addEventListener('click', saveGroup);
     els.leaveButton.addEventListener('click', leaveGroup);
+
+    els.addFixedCostButton.addEventListener('click', () => {
+      els.addFixedCostForm.classList.remove('hidden');
+      els.newFixedCostError.classList.add('hidden');
+    });
+
+    els.cancelNewFixedCost.addEventListener('click', () => {
+      els.addFixedCostForm.classList.add('hidden');
+      els.newFixedCostType.value = '';
+      els.newFixedCostAmount.value = '';
+      els.newFixedCostPeriod.value = 'year';
+      els.newFixedCostPaidBy.value = '';
+    });
+
+    els.saveNewFixedCost.addEventListener('click', async () => {
+      els.newFixedCostError.classList.add('hidden');
+      const costType = els.newFixedCostType.value;
+      const amount = Number(els.newFixedCostAmount.value);
+      if (!costType || !(amount >= 0)) {
+        els.newFixedCostError.textContent = 'Kies een type en vul een geldig bedrag in.';
+        els.newFixedCostError.classList.remove('hidden');
+        return;
+      }
+      try {
+        await fetchJson(`/api/groups/${encodeURIComponent(state.groupId)}/fixed-costs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            costType,
+            amount,
+            period: els.newFixedCostPeriod.value,
+            paidByName: els.newFixedCostPaidBy.value,
+          }),
+        });
+        els.cancelNewFixedCost.click();
+        await loadFixedCosts();
+      } catch (error) {
+        els.newFixedCostError.textContent = error.message || 'Opslaan is niet gelukt.';
+        els.newFixedCostError.classList.remove('hidden');
+      }
+    });
 
     els.dismissInsuranceBanner.addEventListener('click', async () => {
       els.insuranceBanner.classList.add('hidden');
