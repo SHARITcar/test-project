@@ -32,7 +32,7 @@ def register_user():
     handle_new_user trigger which writes them to public.profiles.
     """
     if not request.is_json:
-        return jsonify({'error': 'Content-Type must be application/json'}), 400
+        return jsonify({'error': 'Content-Type moet application/json zijn'}), 400
 
     data = request.get_json() or {}
     email = (data.get('email') or '').strip().lower()
@@ -42,14 +42,14 @@ def register_user():
     last_name = (data.get('last_name') or '').strip()
 
     if not email or not password or not confirm_password or not first_name or not last_name:
-        return jsonify({'error': 'Missing required fields'}), 400
+        return jsonify({'error': 'Verplichte velden ontbreken'}), 400
 
     if password != confirm_password:
-        return jsonify({'error': 'Passwords do not match'}), 400
+        return jsonify({'error': 'Wachtwoorden komen niet overeen'}), 400
 
     if not is_strong_password(password):
         return jsonify({
-            'error': 'Password must be 8-72 characters and include uppercase, lowercase, number, and symbol'
+            'error': 'Wachtwoord moet 8-72 tekens bevatten met een hoofdletter, kleine letter, cijfer en symbool'
         }), 400
 
     try:
@@ -67,17 +67,27 @@ def register_user():
         })
 
         if response.user is None:
-            return jsonify({'error': 'Registration failed'}), 400
+            return jsonify({'error': 'Registreren mislukt'}), 400
+
+        # Supabase's anti-enumeration protection doesn't raise for a sign_up
+        # with an email that already has a confirmed account — it returns a
+        # look-alike user with an empty identities list and sends no email.
+        # Without this check we'd tell the user we sent a verification email
+        # that never went out.
+        if not getattr(response.user, 'identities', None):
+            return jsonify({
+                'error': "Dit e-mailadres is al in gebruik. Log in of gebruik 'wachtwoord vergeten'."
+            }), 409
 
         return jsonify({
-            'message': 'Account created. Please check your email to verify your address.',
-            'next_step': 'Check your inbox for the verification email.',
+            'message': 'Account aangemaakt. Controleer je e-mail om je adres te bevestigen.',
+            'next_step': 'Bekijk je inbox voor de verificatiemail.',
         }), 200
 
     except Exception as exc:
         msg = str(exc).lower()
         if 'already registered' in msg or 'already exists' in msg or 'user already' in msg:
-            return jsonify({'error': 'Email already registered'}), 409
+            return jsonify({'error': 'E-mailadres is al geregistreerd'}), 409
         if 'network is unreachable' in msg or 'connection' in msg or 'timeout' in msg:
-            return jsonify({'error': 'Cannot reach authentication service. Please try again shortly.'}), 503
-        return jsonify({'error': 'Registration failed', 'details': str(exc)}), 500
+            return jsonify({'error': 'Kan de registratieservice niet bereiken. Probeer het straks opnieuw.'}), 503
+        return jsonify({'error': 'Registreren mislukt', 'details': str(exc)}), 500

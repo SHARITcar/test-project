@@ -1,22 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}Verify Your Email - SHARIT{% endblock %}
+{% block lang %}nl{% endblock %}
+{% block title %}Bevestig je e-mailadres - SHARIT{% endblock %}
 {% block body_class %}min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-slate-100 flex items-center justify-center p-4{% endblock %}
 
 {% block content %}
     <div class="w-full max-w-md">
         <!-- Hero/Header -->
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold mb-3">Verify your email</h1>
-            <p class="text-slate-300 text-lg">We sent a verification code to confirm your account</p>
+            <h1 class="text-3xl font-bold mb-3">Bevestig je e-mailadres</h1>
+            <p class="text-slate-300 text-lg">We hebben een verificatiecode gestuurd om je account te bevestigen</p>
         </div>
 
         <!-- Main Content Card -->
         <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-slate-700/50">
             <!-- Email Display -->
             <div class="mb-6 text-center">
-                <p class="text-sm text-slate-400 mb-2">Verification link sent to:</p>
-                <p class="text-accent font-semibold text-lg" id="email-display">your email address</p>
+                <p class="text-sm text-slate-400 mb-2">Verificatielink verstuurd naar:</p>
+                <p class="text-accent font-semibold text-lg" id="email-display">je e-mailadres</p>
             </div>
 
             <!-- Instruction -->
@@ -24,35 +25,35 @@
                 <svg class="w-10 h-10 text-accent mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>
-                <p class="text-slate-200 font-medium">Check your inbox</p>
+                <p class="text-slate-200 font-medium">Controleer je inbox</p>
                 <p class="text-slate-400 text-sm">
-                    We've sent a verification link to your email address.<br>
-                    Click the link in the email to activate your account.
+                    We hebben een verificatielink naar je e-mailadres gestuurd.<br>
+                    Klik op de link in de e-mail om je account te activeren.
                 </p>
             </div>
 
             <!-- Feedback States -->
             <div class="hidden mb-4 bg-green-900/30 border border-green-700/50 rounded-xl p-3 text-green-300 text-sm text-center" id="resend-success">
-                Verification email resent. Please check your inbox.
+                Verificatiemail opnieuw verstuurd. Controleer je inbox.
             </div>
             <div class="hidden mb-4 bg-red-900/30 border border-red-700/50 rounded-xl p-3 text-red-300 text-sm text-center" id="resend-error">
-                Could not resend the email. Please try again.
+                De e-mail kon niet opnieuw worden verstuurd. Probeer het opnieuw.
             </div>
 
             <!-- Secondary Actions -->
             <div class="space-y-4 text-center">
                 <div>
-                    <p class="text-slate-400 text-sm mb-2">Didn't receive the email?</p>
+                    <p class="text-slate-400 text-sm mb-2">Geen e-mail ontvangen?</p>
                     <button
                         type="button"
                         class="text-accent hover:text-cyan-300 font-medium text-sm transition-colors duration-200 focus:outline-none focus:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                        aria-label="Resend verification email"
+                        aria-label="Verificatiemail opnieuw versturen"
                         id="resend-btn"
                     >
-                        Resend verification email
+                        Verificatiemail opnieuw versturen
                     </button>
                     <p class="text-slate-500 text-xs mt-1 hidden" id="resend-timer">
-                        You can resend in <span id="countdown">60</span> seconds
+                        Je kunt opnieuw versturen over <span id="countdown">60</span> seconden
                     </p>
                 </div>
 
@@ -60,9 +61,9 @@
                     <a
                         href="/register"
                         class="text-slate-400 hover:text-slate-300 text-sm transition-colors duration-200 focus:outline-none focus:underline"
-                        aria-label="Go back to registration"
+                        aria-label="Terug naar registratie"
                     >
-                        ← Back to registration
+                        ← Terug naar registratie
                     </a>
                 </div>
             </div>
@@ -99,11 +100,11 @@
                 if (response.ok) {
                     successEl.classList.remove('hidden');
                 } else {
-                    errorEl.textContent = payload.error || 'Could not resend the email. Please try again.';
+                    errorEl.textContent = payload.error || 'De e-mail kon niet opnieuw worden verstuurd. Probeer het opnieuw.';
                     errorEl.classList.remove('hidden');
                 }
             } catch (err) {
-                errorEl.textContent = 'Network error. Please try again.';
+                errorEl.textContent = 'Netwerkfout. Probeer het opnieuw.';
                 errorEl.classList.remove('hidden');
             }
 

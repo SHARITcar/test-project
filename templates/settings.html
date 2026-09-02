@@ -84,23 +84,13 @@
   </main>
 
   <script>
-    function getSessionToken() {
-      return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
-    }
-
-    function clearSessionToken() {
-      window.localStorage.removeItem('session_token');
-      window.sessionStorage.removeItem('session_token');
-    }
-
-    const token = getSessionToken();
-    if (!token) {
+    if (!SharitSession.getAccessToken()) {
       window.location.href = '/login';
     }
 
     async function fetchJson(path) {
-      const response = await fetch(path, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      const response = await SharitSession.authFetch(path, {
+        headers: { 'Accept': 'application/json' },
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || 'Request failed');
@@ -122,7 +112,7 @@
         document.getElementById('accountAvatar').textContent = initials(profile.first_name, profile.last_name);
       } catch (error) {
         if (String(error.message).toLowerCase().includes('session')) {
-          clearSessionToken();
+          SharitSession.clear();
           window.location.href = '/login';
           return;
         }
@@ -140,7 +130,7 @@
     }
 
     document.getElementById('signOutButton').addEventListener('click', () => {
-      clearSessionToken();
+      SharitSession.clear();
       window.location.href = '/login';
     });
 

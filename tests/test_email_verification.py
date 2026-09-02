@@ -61,7 +61,7 @@ class EmailVerificationRouteTests(unittest.TestCase):
             json={"email": "test@example.com"},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn("resent", response.get_json()["message"])
+        self.assertIn("verstuurd", response.get_json()["message"])
 
     def test_resend_verification_email_missing_email(self):
         response = self.client.post(
@@ -69,7 +69,7 @@ class EmailVerificationRouteTests(unittest.TestCase):
             json={},
         )
         self.assertEqual(response.status_code, 400)
-        self.assertIn("Email is required", response.get_json()["error"])
+        self.assertIn("E-mailadres is verplicht", response.get_json()["error"])
 
 
 if __name__ == "__main__":

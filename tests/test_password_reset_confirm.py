@@ -77,7 +77,7 @@ class PasswordResetConfirmRouteTests(unittest.TestCase):
             json=self._valid_payload(),
         )
         self.assertEqual(response.status_code, 400)
-        self.assertIn("Invalid or expired", response.get_json()["error"])
+        self.assertIn("Ongeldige of verlopen", response.get_json()["error"])
 
     def test_reset_password_weak_password(self):
         mock_user = SimpleNamespace(id="user-123", email="test@example.com")

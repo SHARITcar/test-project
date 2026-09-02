@@ -81,7 +81,7 @@ class LoginRouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
         payload = response.get_json()
         self.assertFalse(payload["success"])
-        self.assertIn("Invalid email or password", payload["error"])
+        self.assertIn("Ongeldig e-mailadres of wachtwoord", payload["error"])
 
     def test_login_missing_fields(self):
         response = self.client.post(

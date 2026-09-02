@@ -30,7 +30,7 @@ PASSWORD_PATTERN = re.compile(
 def reset_password():
     """Set a new password using the tokens from the Supabase recovery email."""
     if not request.is_json:
-        return jsonify({"success": False, "error": "Content-Type must be application/json"}), 400
+        return jsonify({"success": False, "error": "Content-Type moet application/json zijn"}), 400
 
     data = request.get_json() or {}
     access_token = (data.get("access_token") or "").strip()
@@ -38,21 +38,21 @@ def reset_password():
     new_password = data.get("new_password", "")
 
     if not access_token or not refresh_token:
-        return jsonify({"success": False, "error": "access_token and refresh_token are required"}), 400
+        return jsonify({"success": False, "error": "access_token en refresh_token zijn verplicht"}), 400
 
     if not isinstance(new_password, str) or not new_password:
-        return jsonify({"success": False, "error": "New password is required"}), 400
+        return jsonify({"success": False, "error": "Nieuw wachtwoord is verplicht"}), 400
 
     if not PASSWORD_PATTERN.match(new_password):
         return jsonify({
             "success": False,
-            "error": "Password must be 8-72 characters and include uppercase, lowercase, number, and symbol",
+            "error": "Wachtwoord moet 8-72 tekens bevatten met een hoofdletter, kleine letter, cijfer en symbool",
         }), 400
 
     # Verify the token is valid before attempting update
     user = get_user_from_token(access_token)
     if not user:
-        return jsonify({"success": False, "error": "Invalid or expired reset token"}), 400
+        return jsonify({"success": False, "error": "Ongeldige of verlopen resetlink"}), 400
 
     try:
         # Create a fresh per-request client and set the recovery session
@@ -60,8 +60,8 @@ def reset_password():
         client.auth.set_session(access_token, refresh_token)
         client.auth.update_user({"password": new_password})
 
-        return jsonify({"success": True, "message": "Password reset successfully"}), 200
+        return jsonify({"success": True, "message": "Wachtwoord succesvol gewijzigd"}), 200
 
     except Exception as exc:
         logger.error(f"Password reset confirm error for user {user.id}: {exc}")
-        return jsonify({"success": False, "error": "Failed to reset password"}), 500
+        return jsonify({"success": False, "error": "Wachtwoord wijzigen mislukt"}), 500

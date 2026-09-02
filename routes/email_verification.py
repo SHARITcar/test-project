@@ -37,14 +37,14 @@ def resend_verification_email():
     email = (data.get("email") or "").strip().lower()
 
     if not email:
-        return jsonify({"error": "Email is required"}), 400
+        return jsonify({"error": "E-mailadres is verplicht"}), 400
 
     try:
         redirect_url = f"{os.getenv('APP_BASE_URL', 'http://localhost:5000')}/email-verified"
         supabase.auth.resend({"type": "signup", "email": email, "options": {"email_redirect_to": redirect_url}})
-        return jsonify({"message": "Verification email resent. Please check your inbox."}), 200
+        return jsonify({"message": "Verificatiemail opnieuw verstuurd. Controleer je inbox."}), 200
     except Exception as exc:
-        return jsonify({"error": "Failed to resend verification email"}), 500
+        return jsonify({"error": "Verificatiemail opnieuw versturen mislukt"}), 500
 
 
 @bp.route("/api/verification_email_preview", methods=["POST"])

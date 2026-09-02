@@ -19,13 +19,13 @@ def request_password_reset():
     Supabase sends the email and manages the reset token internally.
     """
     if not request.is_json:
-        return jsonify({'success': False, 'message': 'Content-Type must be application/json'}), 400
+        return jsonify({'success': False, 'message': 'Content-Type moet application/json zijn'}), 400
 
     data = request.get_json() or {}
     email = (data.get('email') or '').strip().lower()
 
     if not email:
-        return jsonify({'success': False, 'message': 'Email address is required'}), 400
+        return jsonify({'success': False, 'message': 'E-mailadres is verplicht'}), 400
 
     redirect_url = f"{os.getenv('APP_BASE_URL', 'http://localhost:5000')}/password-reset-confirm"
 
@@ -37,7 +37,7 @@ def request_password_reset():
 
     return jsonify({
         'success': True,
-        'message': 'If an account with that email address exists, we have sent you a password reset link.',
+        'message': 'Als er een account bestaat met dit e-mailadres, hebben we een link gestuurd om je wachtwoord opnieuw in te stellen.',
     }), 200
 
 

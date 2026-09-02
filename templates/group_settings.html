@@ -29,6 +29,11 @@
     </section>
 
     <div id="contentState" class="hidden space-y-6">
+      <div id="insuranceBanner" class="hidden items-start justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+        <p>Don't want to be the one stuck with damage someone else caused? There's insurance for shared car use. <button type="button" id="insuranceMoreInfo" class="font-semibold underline underline-offset-2 hover:text-white">More info</button></p>
+        <button type="button" id="dismissInsuranceBanner" class="shrink-0 text-amber-200 hover:text-white">&times;</button>
+      </div>
+
       <section class="rounded-xl border border-slate-800 bg-slate-900/70 p-6">
         <h2 class="mb-4 text-lg font-semibold">Group info</h2>
         <p id="saveMessage" class="mb-4 hidden rounded-lg border p-3 text-sm"></p>
@@ -68,6 +73,11 @@
           <p id="refreshPriceResult" class="mt-2 text-xs text-slate-400"></p>
         </div>
 
+        <label class="mb-1 block text-sm text-slate-300" for="largeDistanceThresholdKm">Long-trip confirmation threshold (km)</label>
+        <input id="largeDistanceThresholdKm" type="number" min="1" step="1" class="mb-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+        <p class="mb-3 text-xs text-slate-500">Trips longer than this need an extra confirmation before saving.</p>
+        <p id="largeDistanceThresholdKmError" class="mb-3 text-sm text-red-300"></p>
+
         <label class="mb-1 block text-sm text-slate-300" for="reminderType">Reminder type</label>
         <select id="reminderType" class="mb-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></select>
         <p id="reminderTypeError" class="mb-3 text-sm text-red-300"></p>
@@ -104,10 +114,6 @@
   </main>
 
   <script>
-    function getSessionToken() {
-      return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
-    }
-
     function getGroupId() {
       const parts = window.location.pathname.split('/').filter(Boolean);
       return parts.length >= 2 ? parts[1] : '';
@@ -122,7 +128,7 @@
     const PRICE_BUFFER = 0.05;
 
     const state = {
-      token: getSessionToken(),
+      token: SharitSession.getAccessToken(),
       groupId: getGroupId(),
       currentUserId: null,
       group: null,
@@ -138,6 +144,9 @@
       errorText: document.getElementById('errorText'),
       retryButton: document.getElementById('retryButton'),
       contentState: document.getElementById('contentState'),
+      insuranceBanner: document.getElementById('insuranceBanner'),
+      dismissInsuranceBanner: document.getElementById('dismissInsuranceBanner'),
+      insuranceMoreInfo: document.getElementById('insuranceMoreInfo'),
       saveMessage: document.getElementById('saveMessage'),
       groupName: document.getElementById('groupName'),
       groupNameError: document.getElementById('groupNameError'),
@@ -148,6 +157,8 @@
       fuelCountry: document.getElementById('fuelCountry'),
       refreshSuggestedPrice: document.getElementById('refreshSuggestedPrice'),
       refreshPriceResult: document.getElementById('refreshPriceResult'),
+      largeDistanceThresholdKm: document.getElementById('largeDistanceThresholdKm'),
+      largeDistanceThresholdKmError: document.getElementById('largeDistanceThresholdKmError'),
       reminderType: document.getElementById('reminderType'),
       reminderTypeError: document.getElementById('reminderTypeError'),
       physicalReminderNote: document.getElementById('physicalReminderNote'),
@@ -169,10 +180,9 @@
     }
 
     async function fetchJson(path, options = {}) {
-      const response = await fetch(path, {
+      const response = await SharitSession.authFetch(path, {
         ...options,
         headers: {
-          'Authorization': `Bearer ${state.token}`,
           'Accept': 'application/json',
           ...(options.headers || {}),
         },
@@ -189,6 +199,7 @@
     function clearFieldErrors() {
       els.groupNameError.textContent = '';
       els.pricePerKilometerError.textContent = '';
+      els.largeDistanceThresholdKmError.textContent = '';
       els.reminderTypeError.textContent = '';
     }
 
@@ -269,6 +280,7 @@
       els.groupName.value = group.name || '';
       els.licensePlate.value = group.license_plate || '';
       els.pricePerKilometer.value = group.price_per_km || '';
+      els.largeDistanceThresholdKm.value = group.large_distance_threshold_km || 250;
       state.priceMode = group.price_per_km_mode || 'manual';
       state.fuelCountry = group.fuel_country || 'NL';
       els.fuelCountry.value = state.fuelCountry;
@@ -387,7 +399,11 @@
 
       try {
         const profilePayload = await fetchJson('/api/get_user_profile');
-        state.currentUserId = (profilePayload.user_profile || {}).id || null;
+        const profile = profilePayload.user_profile || {};
+        state.currentUserId = profile.id || null;
+        const seenTips = profile.seen_tips || [];
+        els.insuranceBanner.classList.toggle('hidden', seenTips.includes('insurance_banner'));
+        els.insuranceBanner.classList.toggle('flex', !seenTips.includes('insurance_banner'));
 
         const [groupPayload, reminderPayload] = await Promise.all([
           fetchJson(`/api/groups/${encodeURIComponent(state.groupId)}`),
@@ -419,6 +435,7 @@
           pricePerKilometer: Number(els.pricePerKilometer.value),
           pricePerKmMode: state.priceMode,
           fuelCountry: state.fuelCountry,
+          largeDistanceThresholdKm: Number(els.largeDistanceThresholdKm.value),
           internalAgreements: {
             keys: els.agreementKeys.value,
             parking: els.agreementParking.value,
@@ -445,6 +462,7 @@
         const fieldErrors = error.fieldErrors || {};
         if (fieldErrors.groupName) els.groupNameError.textContent = fieldErrors.groupName;
         if (fieldErrors.pricePerKilometer) els.pricePerKilometerError.textContent = fieldErrors.pricePerKilometer;
+        if (fieldErrors.largeDistanceThresholdKm) els.largeDistanceThresholdKmError.textContent = fieldErrors.largeDistanceThresholdKm;
         if (fieldErrors.reminderType) els.reminderTypeError.textContent = fieldErrors.reminderType;
         showSaveMessage(error.message || 'Could not save changes right now.', 'error');
       } finally {
@@ -480,6 +498,25 @@
 
     els.saveButton.addEventListener('click', saveGroup);
     els.leaveButton.addEventListener('click', leaveGroup);
+
+    els.dismissInsuranceBanner.addEventListener('click', async () => {
+      els.insuranceBanner.classList.add('hidden');
+      els.insuranceBanner.classList.remove('flex');
+      try {
+        await fetchJson('/api/profile/tips-seen', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tip: 'insurance_banner' }),
+        });
+      } catch (error) {
+        // Non-critical: worst case the banner reappears next load.
+      }
+    });
+
+    // TODO: point this at a real shared-car insurance info page/partner once one is chosen.
+    els.insuranceMoreInfo.addEventListener('click', () => {
+      alert('More info coming soon.');
+    });
 
     if (!state.groupId) {
       setVisible('error');

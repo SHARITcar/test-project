@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}Sign In - SHARIT{% endblock %}
+{% block lang %}nl{% endblock %}
+{% block title %}Inloggen - SHARIT{% endblock %}
 {% block body_class %}min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800{% endblock %}
 
 {% block content %}
@@ -14,29 +15,29 @@
         <div class="w-full max-w-md">
             <!-- Header -->
             <header class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-white mb-2">Welcome back</h1>
-                <p class="text-slate-400">Sign in to your SHARIT account to manage expenses with your groups</p>
+                <h1 class="text-3xl font-bold text-white mb-2">Welkom bij SHARIT</h1>
+                <p class="text-slate-400">Ritjes en kosten bijhouden van je gedeelde auto</p>
             </header>
 
             <!-- Login Form Card -->
             <div class="backdrop-blur-lg bg-white/5 border border-white/10 rounded-2xl shadow-2xl p-8">
-                <form class="space-y-6" id="login-form">
+                <form class="space-y-6" id="login-form" novalidate>
                     <!-- CSRF Token -->
                     <input type="hidden" name="csrf_token" value="secure_csrf_token_placeholder">
 
                     <!-- Email Field -->
                     <div>
                         <label for="email" class="block text-sm font-medium text-slate-200 mb-2">
-                            Email address
+                            E-mailadres
                         </label>
-                        <input 
-                            type="email" 
-                            id="email" 
-                            name="email" 
-                            required 
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            required
                             aria-describedby="email-error"
                             class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-accent focus:border-accent transition-all duration-200 hover:border-slate-500"
-                            placeholder="Enter your email address"
+                            placeholder="Vul je e-mailadres in"
                         >
                         <div id="email-error" class="mt-1 text-sm text-red-400 hidden" role="alert"></div>
                     </div>
@@ -44,17 +45,28 @@
                     <!-- Password Field -->
                     <div>
                         <label for="password" class="block text-sm font-medium text-slate-200 mb-2">
-                            Password
+                            Wachtwoord
                         </label>
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password" 
-                            required 
-                            aria-describedby="password-error"
-                            class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-accent focus:border-accent transition-all duration-200 hover:border-slate-500"
-                            placeholder="Enter your password"
-                        >
+                        <div class="relative">
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                required
+                                aria-describedby="password-error"
+                                class="w-full px-4 py-3 pr-12 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-accent focus:border-accent transition-all duration-200 hover:border-slate-500"
+                                placeholder="Vul je wachtwoord in"
+                            >
+                            <button type="button" id="password-toggle" tabindex="-1" aria-label="Toon wachtwoord" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-200">
+                                <svg data-icon="eye" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <svg data-icon="eye-off" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M10.584 10.587a2 2 0 002.828 2.83M9.363 5.365A9.466 9.466 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.523 10.523 0 01-4.293 5.774M6.228 6.228A10.45 10.45 0 002.458 12c1.274 4.057 5.065 7 9.542 7a9.53 9.53 0 004.887-1.333" />
+                                </svg>
+                            </button>
+                        </div>
                         <div id="password-error" class="mt-1 text-sm text-red-400 hidden" role="alert"></div>
                     </div>
 
@@ -68,7 +80,7 @@
                             class="w-4 h-4 text-accent bg-slate-800/50 border-slate-600 rounded focus:ring-accent focus:ring-2"
                         >
                         <label for="remember-me" class="ml-2 text-sm text-slate-300">
-                            Keep me signed in for 30 days
+                            Blijf 30 dagen ingelogd
                         </label>
                     </div>
 
@@ -78,7 +90,7 @@
                             <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="text-sm text-red-300" id="form-error-message">Invalid email or password. Please try again.</span>
+                            <span class="text-sm text-red-300" id="form-error-message">Ongeldig e-mailadres of wachtwoord. Probeer het opnieuw.</span>
                         </div>
                     </div>
 
@@ -88,13 +100,13 @@
                         id="login-button"
                         class="w-full bg-accent hover:bg-cyan-400 text-slate-900 font-semibold py-3 px-4 rounded-xl transition-all duration-200 hover:-translate-y-0.5 focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     >
-                        <span id="login-button-text">Sign in to SHARIT</span>
+                        <span id="login-button-text">Inloggen bij SHARIT</span>
                         <span id="login-button-loading" class="hidden">
                             <svg class="animate-spin -ml-1 mr-2 h-4 w-4 inline" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            Signing in...
+                            Bezig met inloggen...
                         </span>
                     </button>
 
@@ -104,7 +116,7 @@
                             href="/password-reset" 
                             class="text-sm text-accent hover:text-cyan-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-900 rounded px-1"
                         >
-                            Forgot your password?
+                            Wachtwoord vergeten?
                         </a>
                     </div>
                 </form>
@@ -113,12 +125,12 @@
             <!-- Create Account Section -->
             <div class="mt-8 text-center">
                 <div class="backdrop-blur-lg bg-white/5 border border-white/10 rounded-xl p-6">
-                    <p class="text-slate-400 text-sm mb-3">Don't have an account yet?</p>
-                    <a 
-                        href="/register" 
+                    <p class="text-slate-400 text-sm mb-3">Nog geen account?</p>
+                    <a
+                        href="/register"
                         class="inline-flex items-center justify-center w-full px-4 py-2 border border-slate-600 text-slate-200 rounded-xl hover:bg-white/5 hover:border-slate-500 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900"
                     >
-                        Create your SHARIT account
+                        Maak je SHARIT-account aan
                     </a>
                 </div>
             </div>
@@ -126,6 +138,8 @@
     </div>
 
     <script>
+        SharitPasswordToggle.wire('password', 'password-toggle');
+
         function getInviteTokenFromQuery() {
             const params = new URLSearchParams(window.location.search);
             return (params.get('invite') || '').trim();
@@ -133,17 +147,45 @@
 
         const inviteToken = getInviteTokenFromQuery();
 
-        // Redirect already-logged-in users to dashboard
-        (function() {
-            const token = window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
-            if (token) {
-                if (inviteToken) {
-                    window.location.replace(`/invite/${encodeURIComponent(inviteToken)}`);
-                    return;
-                }
-                window.location.replace('/dashboard');
+        // Supabase's recovery/signup confirmation links deliver their tokens
+        // in the URL fragment (#access_token=...&type=recovery). If the
+        // Supabase project's Site URL / Redirect URL config sends the user
+        // here instead of straight to the target page, forward them on with
+        // the fragment intact so the right page can pick it up. Fragments
+        // never reach the server, so this can only be done client-side.
+        function redirectAuthFragmentIfPresent() {
+            const rawHash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+            if (!rawHash) return false;
+
+            const hashParams = new URLSearchParams(rawHash);
+            const type = hashParams.get('type');
+            const accessToken = hashParams.get('access_token');
+            if (!accessToken || !type) return false;
+
+            if (type === 'recovery') {
+                window.location.replace('/password-reset-confirm' + window.location.hash);
+                return true;
             }
-        })();
+            if (type === 'signup' || type === 'invite' || type === 'email_change') {
+                window.location.replace('/email-verified' + window.location.hash);
+                return true;
+            }
+            return false;
+        }
+
+        if (!redirectAuthFragmentIfPresent()) {
+            // Redirect already-logged-in users to dashboard
+            (function() {
+                const token = SharitSession.getAccessToken();
+                if (token) {
+                    if (inviteToken) {
+                        window.location.replace(`/invite/${encodeURIComponent(inviteToken)}`);
+                        return;
+                    }
+                    window.location.replace('/dashboard');
+                }
+            })();
+        }
 
         // Form submission handling with loading states
         document.getElementById('login-form').addEventListener('submit', function(e) {
@@ -166,14 +208,14 @@
             
             if (!email || !password) {
                 e.preventDefault();
-                showFormError('Please fill in all required fields.');
+                showFormError('Vul alle verplichte velden in.');
                 resetButton();
                 return;
             }
-            
+
             if (!isValidEmail(email)) {
                 e.preventDefault();
-                showFormError('Please enter a valid email address.');
+                showFormError('Vul een geldig e-mailadres in.');
                 resetButton();
                 return;
             }
@@ -198,15 +240,13 @@
                     });
 
                     if (!response.ok) {
-                        const message = payload.message || payload.error || 'Invalid email or password. Please try again.';
+                        const message = payload.message || payload.error || 'Ongeldig e-mailadres of wachtwoord. Probeer het opnieuw.';
                         throw new Error(message);
                     }
 
                     if (payload.data && payload.data.access_token) {
-                        const storage = document.getElementById('remember-me').checked ? window.localStorage : window.sessionStorage;
-                        window.localStorage.removeItem('session_token');
-                        window.sessionStorage.removeItem('session_token');
-                        storage.setItem('session_token', payload.data.access_token);
+                        const rememberMe = document.getElementById('remember-me').checked;
+                        SharitSession.store(payload.data.access_token, payload.data.refresh_token, rememberMe);
                     }
 
                     if (payload.data && payload.data.user && payload.data.user.onboarding_completed) {
@@ -258,7 +298,7 @@
             const errorDiv = document.getElementById('email-error');
             
             if (email && !isValidEmail(email)) {
-                errorDiv.textContent = 'Please enter a valid email address.';
+                errorDiv.textContent = 'Vul een geldig e-mailadres in.';
                 errorDiv.classList.remove('hidden');
                 this.classList.add('border-red-500');
             } else {

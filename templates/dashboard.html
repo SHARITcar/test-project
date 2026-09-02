@@ -5,12 +5,7 @@
 {% block head_extra %}
 <style>
     .bg-shell { background: radial-gradient(circle at top right, #0f172a, #020617 55%); }
-    .cue-pulse { animation: cuePulse 1.5s ease-in-out infinite; }
-    @keyframes cuePulse {
-      0%, 100% { transform: scale(1); opacity: 0.65; }
-      50% { transform: scale(1.07); opacity: 1; }
-    }
-    .tab-btn.active { background: #1e293b; color: #f1f5f9; }
+    .tab-btn.active { color: #22d3ee; }
     .pill-btn.active { background: #f1f5f9; color: #0f172a; }
     .scope-btn.active { background: #1e293b; color: #f1f5f9; }
   </style>
@@ -53,17 +48,16 @@
         <p class="text-slate-300" data-i18n="trackShared">Track shared car usage and keep costs fair across your group.</p>
       </section>
 
-      <div id="insuranceBanner" class="mx-auto mt-6 hidden max-w-4xl items-start justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-500/10 p-4 text-sm text-amber-100">
-        <p><span data-i18n="insuranceBanner">Niet de pineut zijn als iemand anders schade rijdt? Er zijn verzekeringen voor gedeeld autogebruik.</span> <button type="button" id="insuranceMoreInfo" class="font-semibold underline underline-offset-2 hover:text-white" data-i18n="moreInfo">Meer info</button></p>
-        <button type="button" id="dismissInsuranceBanner" class="shrink-0 text-amber-200 hover:text-white">&times;</button>
-      </div>
-
       <section id="dashboardEmptyState" class="mx-auto mt-10 max-w-2xl rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center">
         <h3 class="mb-2 text-xl font-semibold" data-i18n="noGroupsYet">No car-sharing groups yet</h3>
-        <p class="text-slate-400" data-i18n="openMenu">Open the menu to create or join a group.</p>
-        <div id="menuCue" class="mt-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/50 bg-cyan-500/10 px-4 py-2 text-sm text-cyan-200 cue-pulse">
-          <span data-i18n="startWithMenu">Start with the menu</span>
-          <span>[menu]</span>
+        <p class="mb-6 text-slate-400" data-i18n="noGroupsYetSubtitle">Create your first car-sharing group or join one you've been invited to.</p>
+        <div class="mx-auto flex max-w-sm flex-col gap-3">
+          <button type="button" id="emptyStateCreateGroup" class="w-full rounded-lg border border-cyan-400/60 bg-cyan-500/20 px-4 py-3 text-left hover:bg-cyan-500/30" data-i18n="emptyStateCreateGroup">
+            Create your first car-sharing group
+          </button>
+          <button type="button" id="emptyStateJoinGroup" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-left hover:bg-slate-700" data-i18n="joinGroup">
+            Join an existing group
+          </button>
         </div>
       </section>
 
@@ -116,8 +110,9 @@
               <h2 class="mb-4 text-lg font-semibold" data-i18n="addTrip">Add trip</h2>
               <p id="tripMessage" class="mb-4 hidden rounded-lg border p-3 text-sm"></p>
 
-              <label class="mb-1 block text-sm text-slate-300" for="tripDate" data-i18n="date">Date</label>
-              <input id="tripDate" type="date" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+              <label class="mb-1 block text-sm text-slate-300" data-i18n="date">Date</label>
+              <button type="button" id="tripDateDisplay" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-left text-slate-100"></button>
+              <input id="tripDate" type="date" class="mb-4 hidden w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
 
               <p class="mb-1 block text-sm text-slate-300" data-i18n="participants">Participants</p>
               <div id="participantPicker" class="mb-1 flex flex-wrap gap-2"></div>
@@ -131,13 +126,20 @@
                 </div>
                 <div>
                   <label class="mb-1 block text-sm text-slate-300" for="odometerEnd" data-i18n="endOdometer">End odometer</label>
-                  <input id="odometerEnd" type="number" min="0" step="0.1" inputmode="decimal" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-lg">
+                  <div class="flex items-center gap-2">
+                    <input id="odometerEnd" type="number" min="0" step="0.1" inputmode="decimal" class="w-full min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-lg">
+                    <button type="button" id="tripPhotoTrigger" class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-slate-700 bg-slate-950 text-slate-400 hover:border-cyan-400 hover:text-cyan-300" data-i18n-title="odometerPhoto" title="Odometer photo">
+                      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 17a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"></path>
+                      </svg>
+                      <span id="tripPhotoIndicator" class="hidden absolute -right-1 -top-1 h-3 w-3 rounded-full bg-cyan-400"></span>
+                    </button>
+                    <input id="tripPhoto" type="file" accept="image/*" capture="environment" class="hidden">
+                  </div>
                   <p id="odometerEndError" class="mt-1 text-sm text-red-300"></p>
                 </div>
               </div>
-
-              <label class="mb-1 block text-sm text-slate-300" for="tripPhoto"><span data-i18n="odometerPhoto">Odometer photo</span> <span class="text-slate-500" data-i18n="optional">optional</span></label>
-              <input id="tripPhoto" type="file" accept="image/*" capture="environment" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm">
 
               <label class="mb-1 block text-sm text-slate-300" for="tripNotes"><span data-i18n="note">Note</span> <span class="text-slate-500" data-i18n="optional">optional</span></label>
               <textarea id="tripNotes" rows="1" data-i18n-placeholder="whatWasTripFor" placeholder="What was the trip for?" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></textarea>
@@ -179,11 +181,16 @@
               <p class="mb-4 text-sm text-slate-400" data-i18n="sharedExpense">A shared expense paid up front by one person.</p>
               <p id="costMessage" class="mb-4 hidden rounded-lg border p-3 text-sm"></p>
 
-              <p class="mb-1 block text-sm text-slate-300" data-i18n="category">Category</p>
-              <div id="categoryPicker" class="mb-4 flex flex-wrap gap-2"></div>
-              <p id="categoryError" class="-mt-3 mb-3 text-sm text-red-300"></p>
+              <label class="mb-1 block text-sm text-slate-300" data-i18n="date">Date</label>
+              <button type="button" id="costDateDisplay" class="mb-4 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-left text-slate-100"></button>
+              <input id="costDate" type="date" class="mb-4 hidden w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
 
-              <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+              <p class="mb-1 block text-sm text-slate-300" data-i18n="category">Category</p>
+              <div id="categoryPicker" class="mb-2 flex flex-wrap gap-2"></div>
+              <input id="costCategoryOther" type="text" data-i18n-placeholder="describeCost" placeholder="Describe the cost" class="mb-2 hidden w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
+              <p id="categoryError" class="mb-3 text-sm text-red-300"></p>
+
+              <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label class="mb-1 block text-sm text-slate-300" for="costPaidBy" data-i18n="paidBy">Paid by</label>
                   <select id="costPaidBy" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"></select>
@@ -192,10 +199,6 @@
                   <label class="mb-1 block text-sm text-slate-300" for="costAmount"><span data-i18n="amount">Amount</span> <span class="text-slate-500">EUR</span></label>
                   <input id="costAmount" type="number" min="0.01" step="0.01" placeholder="0.00" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
                   <p id="costAmountError" class="mt-1 text-sm text-red-300"></p>
-                </div>
-                <div>
-                  <label class="mb-1 block text-sm text-slate-300" for="costDate" data-i18n="date">Date</label>
-                  <input id="costDate" type="date" class="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2">
                 </div>
               </div>
 
@@ -307,10 +310,27 @@
   </div>
 
   <!-- Floating bottom nav: switches tabs within the active group's workspace -->
-  <nav id="tabNav" class="hidden fixed bottom-4 left-1/2 z-40 w-max -translate-x-1/2 inline-flex items-center gap-1 rounded-full border border-slate-800 bg-slate-900/95 p-1 shadow-lg shadow-black/40 backdrop-blur">
-    <button type="button" data-tab="trips" class="tab-btn rounded-full px-5 py-2 text-sm font-medium text-slate-300" data-i18n="trips">Trips</button>
-    <button type="button" data-tab="costs" class="tab-btn rounded-full px-5 py-2 text-sm font-medium text-slate-300" data-i18n="costs">Costs</button>
-    <button type="button" data-tab="dashboard" class="tab-btn rounded-full px-5 py-2 text-sm font-medium text-slate-300" data-i18n="dashboard">Dashboard</button>
+  <nav id="tabNav" class="hidden fixed inset-x-0 bottom-0 z-40 border-t border-slate-800 bg-slate-900/95 shadow-lg shadow-black/40 backdrop-blur">
+    <div class="mx-auto grid max-w-md grid-cols-3">
+      <button type="button" data-tab="trips" class="tab-btn flex flex-col items-center gap-0.5 py-2.5 text-xs font-medium text-slate-400">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+        </svg>
+        <span data-i18n="trips">Trips</span>
+      </button>
+      <button type="button" data-tab="costs" class="tab-btn flex flex-col items-center gap-0.5 py-2.5 text-xs font-medium text-slate-400">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 15.536c-1.171 1.952-3.07 1.952-4.242 0-1.172-1.953-1.172-5.119 0-7.072 1.171-1.952 3.07-1.952 4.242 0M8 10.5h4m-4 3h4m9-1.5a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span data-i18n="costs">Costs</span>
+      </button>
+      <button type="button" data-tab="dashboard" class="tab-btn flex flex-col items-center gap-0.5 py-2.5 text-xs font-medium text-slate-400">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C6.5 20.496 5.996 21 5.375 21h-2.25A1.125 1.125 0 012 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"></path>
+        </svg>
+        <span data-i18n="dashboard">Dashboard</span>
+      </button>
+    </div>
   </nav>
 
   <div id="groupActionModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 p-4">
@@ -327,6 +347,13 @@
   </div>
 
   <!-- Bottom sheet: trip / cost / balance / settle-up detail -->
+  <!-- Toast: brief validation pop-up -->
+  <div id="toast" class="pointer-events-none fixed inset-x-4 top-4 z-[60] hidden">
+    <div class="mx-auto max-w-md rounded-lg border border-red-400/50 bg-red-500 p-3 text-sm font-medium text-white shadow-lg">
+      <p id="toastMessage"></p>
+    </div>
+  </div>
+
   <div id="sheetOverlay" class="fixed inset-0 z-50 hidden bg-slate-950/70">
     <div id="bottomSheet" class="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl border-t border-slate-800 bg-slate-900 p-5 pb-8">
       <div class="mb-4 flex items-center justify-between gap-3">
@@ -341,7 +368,7 @@
   </div>
 
   <script>
-    const CATEGORIES = ['Car insurance', 'Road tax', 'Parking permit', 'Fixed depreciation'];
+    const CATEGORIES = ['Car insurance', 'Road tax', 'Parking permit', 'Fixed depreciation', 'Maintenance', 'Fuel', 'Other'];
     const AVATAR_COLORS = ['bg-cyan-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-rose-500', 'bg-blue-500'];
 
     // ---------- Language ----------
@@ -349,9 +376,9 @@
     const TRANSLATIONS = {
       en: {
         yourGroups: 'Your groups', welcome: 'Welcome', trackShared: 'Track shared car usage and keep costs fair across your group.',
-        insuranceBanner: "Don't want to be the one stuck with damage someone else caused? There's insurance for shared car use.",
-        moreInfo: 'More info', noGroupsYet: 'No car-sharing groups yet', openMenu: 'Open the menu to create or join a group.',
-        startWithMenu: 'Start with the menu', unableToLoadDashboard: 'Unable to load dashboard.', retry: 'Retry',
+        noGroupsYet: 'No car-sharing groups yet', noGroupsYetSubtitle: "Create your first car-sharing group or join one you've been invited to.",
+        emptyStateCreateGroup: 'Create your first car-sharing group',
+        unableToLoadDashboard: 'Unable to load dashboard.', retry: 'Retry',
         groupSettings: 'Group settings', loading: 'Loading...', unableToLoadGroup: 'Unable to load this group right now.',
         currentOdometer: 'Current odometer', lastTrip: 'Last trip', hasTheKey: 'Has the key',
         tripsTip: "Enter the total odometer reading for every trip — not the daily distance. Nothing to fill in again at the end of the trip.",
@@ -378,12 +405,14 @@
         gets: 'gets back', owes: 'owes', settled: 'settled up', role: 'Role', estimated: 'estimated', confirmed: 'confirmed', edited: 'edited',
         addReceiptPhoto: 'Add receipt photo', replaceReceiptPhoto: 'Replace receipt photo', saving: 'Saving...', you: 'You',
         owner: 'owner', member: 'member',
+        today: 'Today', describeCost: 'Describe the cost', describeCostRequired: 'Describe what this cost was for.',
+        lowerThanPrevious: 'This is lower than your previous odometer reading of {value} km — that\'s not possible.',
       },
       nl: {
         yourGroups: 'Jouw groepen', welcome: 'Welkom', trackShared: 'Houd gedeeld autogebruik bij en verdeel kosten eerlijk binnen je groep.',
-        insuranceBanner: 'Niet de pineut zijn als iemand anders schade rijdt? Er zijn verzekeringen voor gedeeld autogebruik.',
-        moreInfo: 'Meer info', noGroupsYet: 'Nog geen deelauto-groepen', openMenu: 'Open het menu om een groep te maken of deel te nemen.',
-        startWithMenu: 'Begin met het menu', unableToLoadDashboard: 'Dashboard kon niet worden geladen.', retry: 'Opnieuw',
+        noGroupsYet: 'Nog geen deelauto-groepen', noGroupsYetSubtitle: 'Creëer je eerste autogroep of neem deel aan een groep waarvoor je bent uitgenodigd.',
+        emptyStateCreateGroup: 'Creëer je eerste autogroep',
+        unableToLoadDashboard: 'Dashboard kon niet worden geladen.', retry: 'Opnieuw',
         groupSettings: 'Groepsinstellingen', loading: 'Laden...', unableToLoadGroup: 'Deze groep kon nu niet worden geladen.',
         currentOdometer: 'Huidige kilometerstand', lastTrip: 'Laatste rit', hasTheKey: 'Heeft de sleutel',
         tripsTip: 'Voer bij elke rit de totale kilometerstand in — niet de dagstand. Aan het einde van de rit hoef je niets opnieuw in te vullen.',
@@ -410,6 +439,8 @@
         gets: 'krijgt terug', owes: 'moet bijleggen', settled: 'vereffend', role: 'Rol', estimated: 'geschat', confirmed: 'bevestigd', edited: 'bewerkt',
         addReceiptPhoto: 'Bonfoto toevoegen', replaceReceiptPhoto: 'Bonfoto vervangen', saving: 'Bezig met opslaan...', you: 'Jij',
         owner: 'eigenaar', member: 'lid',
+        today: 'Vandaag', describeCost: 'Omschrijf de kosten', describeCostRequired: 'Omschrijf waar deze kosten voor waren.',
+        lowerThanPrevious: 'Dit is lager dan je vorige kilometerstand van {value} km — dat kan niet.',
       },
     };
 
@@ -432,20 +463,14 @@
       document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
         el.placeholder = t(el.dataset.i18nPlaceholder);
       });
+      document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+        el.title = t(el.dataset.i18nTitle);
+      });
       document.documentElement.lang = LANG;
     }
 
-    function getSessionToken() {
-      return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
-    }
-
-    function clearSessionToken() {
-      window.localStorage.removeItem('session_token');
-      window.sessionStorage.removeItem('session_token');
-    }
-
     const state = {
-      token: getSessionToken(),
+      token: SharitSession.getAccessToken(),
       profile: null,
       currentUserId: null,
       groups: [],
@@ -482,15 +507,15 @@
       accountName: document.getElementById('accountName'),
       accountAvatar: document.getElementById('accountAvatar'),
       welcomeTitle: document.getElementById('welcomeTitle'),
-      insuranceBanner: document.getElementById('insuranceBanner'),
-      dismissInsuranceBanner: document.getElementById('dismissInsuranceBanner'),
-      insuranceMoreInfo: document.getElementById('insuranceMoreInfo'),
+      emptyStateCreateGroup: document.getElementById('emptyStateCreateGroup'),
+      emptyStateJoinGroup: document.getElementById('emptyStateJoinGroup'),
       addButton: document.getElementById('addGroupButton'),
-      menuCue: document.getElementById('menuCue'),
       modal: document.getElementById('groupActionModal'),
       closeModal: document.getElementById('closeModal'),
       goCreateGroup: document.getElementById('goCreateGroup'),
       joinGroup: document.getElementById('joinGroup'),
+      toast: document.getElementById('toast'),
+      toastMessage: document.getElementById('toastMessage'),
       sheetOverlay: document.getElementById('sheetOverlay'),
       sheetTitle: document.getElementById('sheetTitle'),
       sheetBody: document.getElementById('sheetBody'),
@@ -526,9 +551,12 @@
       odometerEnd: document.getElementById('odometerEnd'),
       odometerEndError: document.getElementById('odometerEndError'),
       tripDate: document.getElementById('tripDate'),
+      tripDateDisplay: document.getElementById('tripDateDisplay'),
       participantPicker: document.getElementById('participantPicker'),
       participantsError: document.getElementById('participantsError'),
       tripPhoto: document.getElementById('tripPhoto'),
+      tripPhotoTrigger: document.getElementById('tripPhotoTrigger'),
+      tripPhotoIndicator: document.getElementById('tripPhotoIndicator'),
       tripNotes: document.getElementById('tripNotes'),
       logTripButton: document.getElementById('logTripButton'),
       tripMessage: document.getElementById('tripMessage'),
@@ -537,10 +565,12 @@
       tripsEmpty: document.getElementById('tripsEmpty'),
       categoryPicker: document.getElementById('categoryPicker'),
       categoryError: document.getElementById('categoryError'),
+      costCategoryOther: document.getElementById('costCategoryOther'),
       costPaidBy: document.getElementById('costPaidBy'),
       costAmount: document.getElementById('costAmount'),
       costAmountError: document.getElementById('costAmountError'),
       costDate: document.getElementById('costDate'),
+      costDateDisplay: document.getElementById('costDateDisplay'),
       costNotes: document.getElementById('costNotes'),
       costPhoto: document.getElementById('costPhoto'),
       logCostButton: document.getElementById('logCostButton'),
@@ -574,10 +604,9 @@
     }
 
     async function fetchJson(path, options = {}) {
-      const response = await fetch(path, {
+      const response = await SharitSession.authFetch(path, {
         ...options,
         headers: {
-          'Authorization': `Bearer ${state.token}`,
           'Accept': 'application/json',
           ...(options.headers || {}),
         },
@@ -615,6 +644,33 @@
       return `${d}-${m}-${y}`;
     }
 
+    function updateSmartDateDisplay(displayEl, inputEl) {
+      const todayIso = new Date().toISOString().slice(0, 10);
+      displayEl.textContent = !inputEl.value || inputEl.value === todayIso ? t('today') : formatDate(inputEl.value);
+    }
+
+    function initSmartDateField(displayEl, inputEl) {
+      displayEl.addEventListener('click', () => {
+        displayEl.classList.add('hidden');
+        inputEl.classList.remove('hidden');
+        inputEl.focus();
+        if (inputEl.showPicker) {
+          try { inputEl.showPicker(); } catch (err) { /* not supported in this browser */ }
+        }
+      });
+      inputEl.addEventListener('change', () => {
+        updateSmartDateDisplay(displayEl, inputEl);
+        inputEl.classList.add('hidden');
+        displayEl.classList.remove('hidden');
+      });
+      inputEl.addEventListener('blur', () => {
+        updateSmartDateDisplay(displayEl, inputEl);
+        inputEl.classList.add('hidden');
+        displayEl.classList.remove('hidden');
+      });
+      updateSmartDateDisplay(displayEl, inputEl);
+    }
+
     function formatDateTime(isoTimestamp) {
       if (!isoTimestamp) return '—';
       const d = new Date(isoTimestamp);
@@ -646,6 +702,16 @@
           : 'border-red-400/40 bg-red-500/10 text-red-200'
       }`;
       el.classList.remove('hidden');
+    }
+
+    // ---------- Toast ----------
+
+    let toastTimer = null;
+    function showToast(message) {
+      els.toastMessage.textContent = message;
+      els.toast.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => els.toast.classList.add('hidden'), 4000);
     }
 
     // ---------- Bottom sheet ----------
@@ -1102,6 +1168,7 @@
         });
         els.categoryPicker.appendChild(btn);
       });
+      els.costCategoryOther.classList.toggle('hidden', state.selectedCategory !== 'Other');
     }
 
     function renderPaidByOptions() {
@@ -1207,6 +1274,7 @@
         els.odometerStart.value = '';
         els.odometerEnd.value = '';
         els.tripPhoto.value = '';
+        els.tripPhotoIndicator.classList.add('hidden');
         els.tripNotes.value = '';
         state.selectedParticipantIds.clear();
         renderParticipantPicker();
@@ -1221,6 +1289,7 @@
           }
         } else if (error.fieldErrors && error.fieldErrors.odometerStart) {
           els.odometerStartError.textContent = error.fieldErrors.odometerStart;
+          showToast(error.fieldErrors.odometerStart);
         } else if (error.fieldErrors && error.fieldErrors.odometerEnd) {
           els.odometerEndError.textContent = error.fieldErrors.odometerEnd;
         } else if (error.fieldErrors && error.fieldErrors.participantIds) {
@@ -1268,16 +1337,27 @@
       els.categoryError.textContent = '';
       els.costAmountError.textContent = '';
       els.costMessage.classList.add('hidden');
+
+      if (state.selectedCategory === 'Other' && !els.costCategoryOther.value.trim()) {
+        els.categoryError.textContent = t('describeCostRequired');
+        els.costCategoryOther.focus();
+        return;
+      }
+
       els.logCostButton.disabled = true;
       els.logCostButton.textContent = t('saving');
 
       try {
+        const notes = state.selectedCategory === 'Other'
+          ? `${els.costCategoryOther.value.trim()}${els.costNotes.value ? ' · ' + els.costNotes.value : ''}`
+          : els.costNotes.value;
+
         const formData = new FormData();
         formData.append('category', state.selectedCategory);
         formData.append('paidBy', els.costPaidBy.value);
         formData.append('amount', els.costAmount.value);
         if (els.costDate.value) formData.append('costDate', els.costDate.value);
-        if (els.costNotes.value) formData.append('notes', els.costNotes.value);
+        if (notes) formData.append('notes', notes);
         if (els.costPhoto.files[0]) formData.append('photo', els.costPhoto.files[0]);
 
         await fetchJson(`/api/groups/${encodeURIComponent(state.activeGroupId)}/costs`, {
@@ -1288,6 +1368,7 @@
         els.costAmount.value = '';
         els.costNotes.value = '';
         els.costPhoto.value = '';
+        els.costCategoryOther.value = '';
         setMessage(els.costMessage, 'Cost logged.', 'success');
         state.dashboardLoaded = false;
         await loadCosts();
@@ -1492,6 +1573,8 @@
         const today = new Date().toISOString().slice(0, 10);
         els.tripDate.value = today;
         els.costDate.value = today;
+        updateSmartDateDisplay(els.tripDateDisplay, els.tripDate);
+        updateSmartDateDisplay(els.costDateDisplay, els.costDate);
 
         setActiveTab('trips');
         setWorkspaceVisible('content');
@@ -1524,8 +1607,6 @@
         state.currentUserId = profile.id || null;
         state.activeGroupId = profile.active_group_id || null;
         state.seenTips = profile.seen_tips || [];
-        els.insuranceBanner.classList.toggle('hidden', state.seenTips.includes('insurance_banner'));
-        els.insuranceBanner.classList.toggle('flex', !state.seenTips.includes('insurance_banner'));
 
         const firstName = profile.first_name || 'User';
         const lastName = profile.last_name || '';
@@ -1547,7 +1628,7 @@
         }
       } catch (error) {
         if (String(error.message).toLowerCase().includes('session')) {
-          clearSessionToken();
+          SharitSession.clear();
           window.location.href = '/login';
           return;
         }
@@ -1562,29 +1643,9 @@
       window.location.href = '/settings';
     });
 
-    els.dismissInsuranceBanner.addEventListener('click', async () => {
-      els.insuranceBanner.classList.add('hidden');
-      els.insuranceBanner.classList.remove('flex');
-      try {
-        await fetchJson('/api/profile/tips-seen', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tip: 'insurance_banner' }),
-        });
-      } catch (error) {
-        // Non-critical: worst case the banner reappears next load.
-      }
-    });
-
-    // TODO: point this at a real shared-car insurance info page/partner once one is chosen.
-    els.insuranceMoreInfo.addEventListener('click', () => {
-      alert('More info coming soon.');
-    });
-
     els.addButton.addEventListener('click', () => {
       els.modal.classList.remove('hidden');
       els.modal.classList.add('flex');
-      els.menuCue.classList.add('hidden');
     });
 
     els.closeModal.addEventListener('click', () => {
@@ -1592,11 +1653,11 @@
       els.modal.classList.remove('flex');
     });
 
-    els.goCreateGroup.addEventListener('click', () => {
+    function goCreateGroup() {
       window.location.href = '/create-group';
-    });
+    }
 
-    els.joinGroup.addEventListener('click', () => {
+    function goJoinGroup() {
       const rawLink = window.prompt('Paste an invitation link');
       if (!rawLink) {
         return;
@@ -1614,10 +1675,33 @@
         return;
       }
       window.location.href = `/invite/${encodeURIComponent(inviteToken)}`;
-    });
+    }
+
+    els.goCreateGroup.addEventListener('click', goCreateGroup);
+    els.joinGroup.addEventListener('click', goJoinGroup);
+    els.emptyStateCreateGroup.addEventListener('click', goCreateGroup);
+    els.emptyStateJoinGroup.addEventListener('click', goJoinGroup);
 
     els.logTripButton.addEventListener('click', () => logTrip(false));
     els.logCostButton.addEventListener('click', logCost);
+    initSmartDateField(els.tripDateDisplay, els.tripDate);
+    initSmartDateField(els.costDateDisplay, els.costDate);
+
+    els.tripPhotoTrigger.addEventListener('click', () => els.tripPhoto.click());
+    els.tripPhoto.addEventListener('change', () => {
+      els.tripPhotoIndicator.classList.toggle('hidden', !els.tripPhoto.files[0]);
+    });
+
+    els.odometerStart.addEventListener('blur', () => {
+      const latest = state.trips[0];
+      const previousEnd = latest && latest.odometerEnd !== null && latest.odometerEnd !== undefined ? Number(latest.odometerEnd) : null;
+      const value = Number(els.odometerStart.value);
+      if (previousEnd !== null && els.odometerStart.value !== '' && value < previousEnd) {
+        const message = t('lowerThanPrevious').replace('{value}', formatOdometer(previousEnd));
+        els.odometerStartError.textContent = message;
+        showToast(message);
+      }
+    });
 
     window.addEventListener('resize', () => {
       if (window.innerWidth >= 768) {

@@ -50,24 +50,18 @@
 
     const inviteToken = getInviteTokenContext();
 
-    function getSessionToken() {
-      return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
-    }
-
     async function loadCurrentUser() {
-      const token = getSessionToken();
-      if (!token) {
+      if (!SharitSession.getAccessToken()) {
         window.location.href = '/login';
         return null;
       }
 
-      const response = await fetch('/api/get_user_profile', {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      const response = await SharitSession.authFetch('/api/get_user_profile', {
+        headers: { 'Accept': 'application/json' },
       });
 
       if (!response.ok) {
-        window.localStorage.removeItem('session_token');
-        window.sessionStorage.removeItem('session_token');
+        SharitSession.clear();
         window.location.href = '/login';
         return null;
       }
@@ -77,20 +71,18 @@
     }
 
     async function completeOnboarding() {
-      const token = getSessionToken();
-      if (!token) {
+      if (!SharitSession.getAccessToken()) {
         window.location.href = '/login';
         return;
       }
 
       document.getElementById('loadingState').classList.remove('hidden');
 
-      const response = await fetch('/api/complete_onboarding', {
+      const response = await SharitSession.authFetch('/api/complete_onboarding', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({}),
       });

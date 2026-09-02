@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}Email Verified - SHARIT{% endblock %}
+{% block lang %}nl{% endblock %}
+{% block title %}E-mailadres bevestigd - SHARIT{% endblock %}
 {% block body_class %}min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-slate-100 flex items-center justify-center p-4{% endblock %}
 
 {% block content %}
@@ -12,16 +13,16 @@
                 </svg>
             </div>
 
-            <h1 class="text-3xl md:text-4xl font-bold mb-4">Your email got verified</h1>
+            <h1 class="text-3xl md:text-4xl font-bold mb-4">Je e-mailadres is bevestigd</h1>
             <p class="text-slate-300 text-lg mb-8">
-                Your SHARIT account is now active. You can continue to the login page and sign in.
+                Je SHARIT-account is nu actief. Je kunt doorgaan naar de inlogpagina en inloggen.
             </p>
 
             <a
                 href="/login"
                 class="inline-flex items-center justify-center w-full sm:w-auto px-8 py-3 rounded-xl bg-accent hover:bg-cyan-400 text-slate-900 font-semibold transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-slate-800"
             >
-                Go To Login
+                Ga naar inloggen
             </a>
         </section>
     </main>

@@ -75,17 +75,8 @@
   </main>
 
   <script>
-    function getSessionToken() {
-      return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
-    }
-
-    function clearSessionToken() {
-      window.localStorage.removeItem('session_token');
-      window.sessionStorage.removeItem('session_token');
-    }
-
     const state = {
-      token: getSessionToken(),
+      token: SharitSession.getAccessToken(),
       profile: null,
     };
 
@@ -119,10 +110,9 @@
     }
 
     async function fetchJson(path, options = {}) {
-      const response = await fetch(path, {
+      const response = await SharitSession.authFetch(path, {
         ...options,
         headers: {
-          'Authorization': `Bearer ${state.token}`,
           'Accept': 'application/json',
           ...(options.headers || {}),
         },
@@ -180,7 +170,7 @@
         setVisible('content');
       } catch (error) {
         if (String(error.message).toLowerCase().includes('session')) {
-          clearSessionToken();
+          SharitSession.clear();
           window.location.href = '/login';
           return;
         }
@@ -234,9 +224,8 @@
       const formData = new FormData();
       formData.append('photo', file);
       try {
-        const response = await fetch('/api/profile/photo', {
+        const response = await SharitSession.authFetch('/api/profile/photo', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${state.token}` },
           body: formData,
         });
         const payload = await response.json().catch(() => ({}));
@@ -259,7 +248,7 @@
       els.deleteAccountButton.disabled = true;
       try {
         await fetchJson('/api/profile/delete-account', { method: 'POST' });
-        clearSessionToken();
+        SharitSession.clear();
         window.location.href = '/login';
       } catch (error) {
         els.deleteAccountError.textContent = error.message || 'Could not delete your account right now.';

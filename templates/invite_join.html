@@ -48,17 +48,13 @@
   </main>
 
   <script>
-    function getSessionToken() {
-      return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
-    }
-
     function getInviteToken() {
       const parts = window.location.pathname.split('/').filter(Boolean);
       return parts.length >= 2 ? parts[1] : '';
     }
 
     const state = {
-      token: getSessionToken(),
+      token: SharitSession.getAccessToken(),
       inviteToken: getInviteToken(),
       inviteData: null,
       isJoining: false,
@@ -239,10 +235,9 @@
       renderActions(state.inviteData || {});
 
       try {
-        const response = await fetch(`/api/invite/${encodeURIComponent(state.inviteToken)}/join`, {
+        const response = await SharitSession.authFetch(`/api/invite/${encodeURIComponent(state.inviteToken)}/join`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${state.token}`,
             'Accept': 'application/json',
           },
         });

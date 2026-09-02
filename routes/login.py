@@ -20,19 +20,19 @@ def authenticate_user():
     try:
         data = request.get_json(force=True)
     except Exception:
-        return jsonify({'success': False, 'error': 'Invalid JSON payload'}), 400
+        return jsonify({'success': False, 'error': 'Ongeldige aanvraag'}), 400
 
     if not data:
-        return jsonify({'success': False, 'error': 'Missing request data'}), 400
+        return jsonify({'success': False, 'error': 'Ontbrekende gegevens'}), 400
 
     email = (data.get('email') or '').strip().lower()
     password = data.get('password', '')
 
     if not email or not password:
-        return jsonify({'success': False, 'error': 'Email and password are required'}), 400
+        return jsonify({'success': False, 'error': 'E-mailadres en wachtwoord zijn verplicht'}), 400
 
     if len(password) > 1000:
-        return jsonify({'success': False, 'error': 'Password too long'}), 400
+        return jsonify({'success': False, 'error': 'Wachtwoord is te lang'}), 400
 
     try:
         response = supabase.auth.sign_in_with_password({'email': email, 'password': password})
@@ -41,7 +41,7 @@ def authenticate_user():
         session = response.session
 
         if not user or not session:
-            return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+            return jsonify({'success': False, 'error': 'Ongeldig e-mailadres of wachtwoord'}), 401
 
         # Fetch app profile with the user's JWT so RLS is satisfied
         profile_resp = (
@@ -55,13 +55,13 @@ def authenticate_user():
         profile = profile_resp.data or {}
 
         if profile.get('account_status') == 'suspended':
-            return jsonify({'success': False, 'error': 'Account suspended. Please contact support.'}), 403
+            return jsonify({'success': False, 'error': 'Account geschorst. Neem contact op met support.'}), 403
         if profile.get('account_status') == 'deleted':
-            return jsonify({'success': False, 'error': 'Account not found.'}), 404
+            return jsonify({'success': False, 'error': 'Account niet gevonden.'}), 404
 
         return jsonify({
             'success': True,
-            'message': 'Login successful',
+            'message': 'Inloggen gelukt',
             'data': {
                 'access_token': session.access_token,
                 'refresh_token': session.refresh_token,
@@ -80,18 +80,18 @@ def authenticate_user():
     except Exception as exc:
         msg = str(exc).lower()
         if 'invalid login credentials' in msg or 'invalid_credentials' in msg:
-            return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+            return jsonify({'success': False, 'error': 'Ongeldig e-mailadres of wachtwoord'}), 401
         if 'email not confirmed' in msg:
             return jsonify({
                 'success': False,
-                'error': 'Please verify your email before logging in.',
+                'error': 'Bevestig eerst je e-mailadres voordat je inlogt.',
                 'action_required': 'email_verification',
             }), 403
         if 'network is unreachable' in msg or 'connection' in msg or 'timeout' in msg:
             logger.error(f"Supabase unreachable for {email}: {exc}")
-            return jsonify({'success': False, 'error': 'Cannot reach authentication service. Please try again shortly.'}), 503
+            return jsonify({'success': False, 'error': 'Kan de inlogservice niet bereiken. Probeer het straks opnieuw.'}), 503
         logger.error(f"Login error for {email}: {exc}")
-        return jsonify({'success': False, 'error': 'Authentication service unavailable'}), 500
+        return jsonify({'success': False, 'error': 'Inlogservice niet beschikbaar'}), 500
 
 
 @bp.route('/api/auth/refresh', methods=['POST'])
@@ -101,14 +101,14 @@ def refresh_session():
     refresh_token = (data.get('refresh_token') or '').strip()
 
     if not refresh_token:
-        return jsonify({'success': False, 'error': 'refresh_token is required'}), 400
+        return jsonify({'success': False, 'error': 'refresh_token is verplicht'}), 400
 
     try:
         response = supabase.auth.refresh_session(refresh_token)
         session = response.session
 
         if not session:
-            return jsonify({'success': False, 'error': 'Invalid or expired refresh token'}), 401
+            return jsonify({'success': False, 'error': 'Ongeldige of verlopen sessie'}), 401
 
         return jsonify({
             'success': True,
@@ -121,4 +121,4 @@ def refresh_session():
 
     except Exception as exc:
         logger.error(f"Token refresh error: {exc}")
-        return jsonify({'success': False, 'error': 'Failed to refresh session'}), 500
+        return jsonify({'success': False, 'error': 'Sessie vernieuwen mislukt'}), 500

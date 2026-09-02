@@ -212,10 +212,6 @@
       },
     ];
 
-    function getSessionToken() {
-      return window.localStorage.getItem('session_token') || window.sessionStorage.getItem('session_token');
-    }
-
     function debounce(fn, delay) {
       let timer = null;
       return (...args) => {
@@ -225,7 +221,7 @@
     }
 
     const state = {
-      token: getSessionToken(),
+      token: SharitSession.getAccessToken(),
       step: 0,
       reminderTypes: [],
       inviteLink: '',
@@ -358,10 +354,9 @@
     // ---------- License plate -> RDW lookup ----------
 
     async function fetchJson(path, options = {}) {
-      const response = await fetch(path, {
+      const response = await SharitSession.authFetch(path, {
         ...options,
         headers: {
-          'Authorization': `Bearer ${state.token}`,
           'Accept': 'application/json',
           ...(options.headers || {}),
         },
@@ -860,11 +855,8 @@
       const formData = new FormData();
       formData.append('groupPhoto', state.groupPhotoFile);
 
-      await fetch(`/api/groups/${groupId}/photo`, {
+      await SharitSession.authFetch(`/api/groups/${groupId}/photo`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${state.token}`,
-        },
         body: formData,
       });
     }

@@ -146,7 +146,7 @@ def password_reset():
 
     return jsonify({
         "success": True,
-        "message": "If an account exists with that email address, a reset link has been sent."
+        "message": "Als er een account bestaat met dit e-mailadres, is er een link gestuurd om het wachtwoord opnieuw in te stellen."
     }), 200
 
 
